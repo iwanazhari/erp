@@ -192,3 +192,19 @@ export interface LocationFilters {
   page?: number;
   limit?: number;
 }
+
+// Google Maps URL Parser Types
+export interface ParseMapsUrlRequest {
+  url: string;
+}
+
+export interface ParseMapsUrlResponse {
+  success: boolean;
+  data: {
+    latitude: number;
+    longitude: number;
+    cached: boolean;
+    expandedUrl?: string;
+  };
+  error?: string;
+}

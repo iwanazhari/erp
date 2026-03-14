@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { urlParserService } from '@/services/urlParserService';
 
 type Props = {
   latitude?: number;
@@ -30,6 +31,7 @@ export default function MapPicker({
   const [inputMode, setInputMode] = useState<'manual' | 'gmaps'>('manual');
   const [gmapsLink, setGmapsLink] = useState('');
   const [gmapsError, setGmapsError] = useState('');
+  const [isParsingUrl, setIsParsingUrl] = useState(false);
 
   // Update internal state when props change
   useEffect(() => {
@@ -43,15 +45,24 @@ export default function MapPicker({
   }, [lat, lng, address, onChange]);
 
   // Parse Google Maps link to extract coordinates
-  const parseGoogleMapsLink = (url: string): { lat: number; lng: number } | null => {
+  const parseGoogleMapsLink = async (url: string): Promise<{ lat: number; lng: number } | null> => {
     try {
-      // Handle various Google Maps URL formats
-      // Format 1: https://www.google.com/maps?q=-6.2088,106.8456
-      // Format 2: https://www.google.com/maps/place/-6.2088,106.8456
-      // Format 3: https://goo.gl/maps/xxx (shortened - requires API)
-      // Format 4: https://www.google.com/maps/@-6.2088,106.8456,15z
-      // Format 5: https://www.google.com/maps?ll=-6.2088,106.8456
+      console.log('🔍 Raw URL:', url);
 
+      // Check if it's a shortened URL - use backend parser
+      if (urlParserService.isShortenedUrl(url)) {
+        console.log('📎 Shortened URL detected, using backend parser');
+        try {
+          const result = await urlParserService.parseMapsUrl(url);
+          console.log('✅ Backend parser result:', result);
+          return { lat: result.latitude, lng: result.longitude };
+        } catch (error) {
+          console.error('❌ Backend parser error:', error);
+          throw error;
+        }
+      }
+
+      // For full URLs, parse locally
       const urlObj = new URL(url);
       const pathname = urlObj.pathname;
       const searchParams = urlObj.searchParams;
@@ -86,28 +97,46 @@ export default function MapPicker({
 
       return null;
     } catch (error) {
+      console.error('❌ Error parsing Google Maps link:', error);
       return null;
     }
   };
 
   const handleGmapsLinkSubmit = async () => {
     setGmapsError('');
-    
+
     if (!gmapsLink.trim()) {
       setGmapsError('Masukkan link Google Maps');
       return;
     }
 
-    const coords = parseGoogleMapsLink(gmapsLink);
-    if (coords) {
-      setLat(coords.lat);
-      setLng(coords.lng);
-      setGmapsLink('');
-      setInputMode('manual');
-      // Get address from coordinates
-      await getAddressFromCoords(coords.lat, coords.lng);
-    } else {
-      setGmapsError('Link Google Maps tidak valid. Pastikan link berisi koordinat.');
+    // Validate URL first
+    if (!urlParserService.isValidGoogleMapsUrl(gmapsLink)) {
+      setGmapsError('Link Google Maps tidak valid. Hanya link dari google.com dan maps.app.goo.gl yang didukung.');
+      return;
+    }
+
+    setIsParsingUrl(true);
+
+    try {
+      const coords = await parseGoogleMapsLink(gmapsLink);
+      
+      if (coords) {
+        setLat(coords.lat);
+        setLng(coords.lng);
+        setGmapsLink('');
+        setInputMode('manual');
+        // Get address from coordinates
+        await getAddressFromCoords(coords.lat, coords.lng);
+      } else {
+        setGmapsError('Tidak dapat mengekstrak koordinat dari link. Pastikan link mengarah ke lokasi spesifik di Google Maps.');
+      }
+    } catch (error) {
+      console.error('❌ Error parsing Google Maps link:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan saat memproses link Google Maps';
+      setGmapsError(errorMessage);
+    } finally {
+      setIsParsingUrl(false);
     }
   };
 
@@ -259,17 +288,29 @@ export default function MapPicker({
               value={gmapsLink}
               onChange={(e) => setGmapsLink(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleGmapsLinkSubmit()}
-              placeholder="Tempel link Google Maps (contoh: https://www.google.com/maps?q=-6.2088,106.8456)"
+              placeholder="Tempel link Google Maps (contoh: https://maps.app.goo.gl/xxx)"
               className={`flex-1 px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 gmapsError ? 'border-red-500' : 'border-slate-300'
               }`}
+              disabled={isParsingUrl}
             />
             <button
               type="button"
               onClick={handleGmapsLinkSubmit}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={isParsingUrl || !gmapsLink.trim()}
+              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Ambil Lokasi
+              {isParsingUrl ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Memproses...
+                </>
+              ) : (
+                'Ambil Lokasi'
+              )}
             </button>
           </div>
           {gmapsError && (
@@ -280,10 +321,15 @@ export default function MapPicker({
             <ol className="text-xs text-blue-700 list-decimal list-inside space-y-1">
               <li>Buka Google Maps di browser</li>
               <li>Klik kanan pada lokasi yang diinginkan</li>
-              <li>Pilih angka koordinat (contoh: -6.2088, 106.8456)</li>
-              <li>Salin link atau klik "Bagikan" dan salin link</li>
+              <li>Klik "Bagikan" atau "Share"</li>
+              <li>Salin link (bisa link pendek atau link lengkap)</li>
               <li>Tempel link di kolom di atas</li>
             </ol>
+            <p className="text-xs text-blue-600 mt-2 font-medium">✅ Mendukung:</p>
+            <ul className="text-xs text-blue-600 list-disc list-inside space-y-1">
+              <li>Link pendek: maps.app.goo.gl/xxx, goo.gl/maps/xxx</li>
+              <li>Link lengkap: google.com/maps/place/...</li>
+            </ul>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { GeoapifyGeocoderAutocomplete } from '@geoapify/react-geocoder-autocomplete';
 import { useToast } from './ToastContext';
+import { urlParserService } from '@/services/urlParserService';
 
 type GeoapifyPlace = {
   properties: {
@@ -26,6 +27,7 @@ export default function AddressAutocomplete({ onLocationSelect, initialAddress =
   const [inputMode, setInputMode] = useState<'autocomplete' | 'gmaps'>('autocomplete');
   const [gmapsLink, setGmapsLink] = useState('');
   const [gmapsError, setGmapsError] = useState('');
+  const [isParsingUrl, setIsParsingUrl] = useState(false);
 
   const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY;
 
@@ -33,28 +35,28 @@ export default function AddressAutocomplete({ onLocationSelect, initialAddress =
   console.log('Geoapify API Key loaded:', apiKey ? '***' + apiKey.slice(-4) : 'NOT FOUND');
 
   // Parse Google Maps link to extract coordinates
-  const parseGoogleMapsLink = (url: string): { lat: number; lng: number } | null => {
+  const parseGoogleMapsLink = async (url: string): Promise<{ lat: number; lng: number } | null> => {
     try {
       console.log('🔍 Raw URL:', url);
-      
-      // Handle various Google Maps URL formats
-      // Format 1: https://www.google.com/maps?q=-6.208789012345679,106.8456123456789
-      // Format 2: https://www.google.com/maps/place/Name/@-6.208789012345679,106.8456123456789,15z
-      // Format 3: https://www.google.com/maps/place/Name/@lat,lng,17z/data=...!3dLAT!4dLNG
-      // Format 4: https://www.google.com/maps?ll=-6.208789012345679,106.8456123456789
-      // Format 5: https://www.google.com/maps/dir/?api=1&destination=-6.208789012345679,106.8456123456789
-      // Note: Shortened links (goo.gl, maps.app.goo.gl) require API to expand
 
+      // Check if it's a shortened URL - use backend parser
+      if (urlParserService.isShortenedUrl(url)) {
+        console.log('📎 Shortened URL detected, using backend parser');
+        try {
+          const result = await urlParserService.parseMapsUrl(url);
+          console.log('✅ Backend parser result:', result);
+          return { lat: result.latitude, lng: result.longitude };
+        } catch (error) {
+          console.error('❌ Backend parser error:', error);
+          throw error; // Re-throw to be handled by handleGmapsLinkSubmit
+        }
+      }
+
+      // For full URLs, parse locally (faster, no API call needed)
       const urlObj = new URL(url);
       const pathname = urlObj.pathname;
       const searchParams = urlObj.searchParams;
-      const hash = urlObj.hash; // Get the hash part (#...)
-
-      // Skip shortened URLs - they need to be expanded first
-      if (urlObj.hostname.includes('goo.gl') || urlObj.hostname.includes('maps.app.goo.gl')) {
-        console.log('⚠️ Shortened URL detected, cannot parse without API');
-        return null;
-      }
+      const hash = urlObj.hash;
 
       console.log('🔍 Parsed URL:', {
         hostname: urlObj.hostname,
@@ -65,8 +67,6 @@ export default function AddressAutocomplete({ onLocationSelect, initialAddress =
       });
 
       // PRIORITY 1: Try to get coordinates from data parameters in pathname (!3dLAT!4dLNG)
-      // Google Maps place URLs store actual place coordinates in pathname after /data=
-      // Example: /data=!4m6!3m5!1s0x...!8m2!3d-6.4650068!4d106.7400206
       if (pathname.includes('!3d') && pathname.includes('!4d')) {
         const latMatch = pathname.match(/!3d(-?\d+\.?\d*)/);
         const lngMatch = pathname.match(/!4d(-?\d+\.?\d*)/);
@@ -82,7 +82,7 @@ export default function AddressAutocomplete({ onLocationSelect, initialAddress =
         }
       }
 
-      // PRIORITY 2: Try to get coordinates from query params (?q=lat,lng or ?ll=lat,lng or ?destination=lat,lng)
+      // PRIORITY 2: Try to get coordinates from query params
       const q = searchParams.get('q') || searchParams.get('ll') || searchParams.get('destination');
       if (q) {
         console.log('📍 Found coordinates in query params:', q);
@@ -90,8 +90,8 @@ export default function AddressAutocomplete({ onLocationSelect, initialAddress =
         if (coords.length >= 2) {
           const latitude = parseFloat(coords[0].trim());
           const longitude = parseFloat(coords[1].trim());
-          if (!isNaN(latitude) && !isNaN(longitude) && 
-              latitude >= -90 && latitude <= 90 && 
+          if (!isNaN(latitude) && !isNaN(longitude) &&
+              latitude >= -90 && latitude <= 90 &&
               longitude >= -180 && longitude <= 180) {
             console.log('✅ Parsed coordinates from query params (full precision):', { lat: latitude, lng: longitude });
             return { lat: latitude, lng: longitude };
@@ -100,11 +100,9 @@ export default function AddressAutocomplete({ onLocationSelect, initialAddress =
       }
 
       // PRIORITY 3: Try to get coordinates from path (/maps/place/lat,lng or /maps/@lat,lng)
-      // This is viewport center, may not be exact place location
       const pathParts = pathname.split('/');
       for (const part of pathParts) {
         if (part.includes('@')) {
-          // Extract coordinates after @ symbol
           const atIndex = part.indexOf('@');
           const coordsPart = part.substring(atIndex + 1);
           const coords = coordsPart.split(',');
@@ -137,86 +135,86 @@ export default function AddressAutocomplete({ onLocationSelect, initialAddress =
       return;
     }
 
-    const coords = parseGoogleMapsLink(gmapsLink);
-    if (coords) {
-      console.log('✅ Koordinat asli dari Google Maps:', coords);
-      
-      // Reverse geocode to get address - Try Geoapify first
-      try {
-        const response = await fetch(
-          `https://api.geoapify.com/v1/geocode/reverse?lat=${coords.lat}&lon=${coords.lng}&apiKey=${apiKey}&lang=en`
-        );
-        const data = await response.json();
-        console.log('📍 Geoapify reverse geocoding result:', data);
-        
-        // Get the best address from Geoapify
-        const feature = data.features?.[0];
-        let address = '';
-        
-        if (feature?.properties) {
-          const props = feature.properties;
-          // Build address from components for better accuracy
-          const street = props.street || props.road || props.address_line1 || '';
-          const suburb = props.suburb || props.neighbourhood || props.city_district || '';
-          const city = props.city || props.town || props.village || '';
-          const state = props.state || '';
-          const postcode = props.postcode || '';
-          
-          // Combine into full address
-          const parts = [street, suburb, city, state, postcode].filter(Boolean);
-          address = parts.join(', ') || props.formatted || `${coords.lat}, ${coords.lng}`;
-        } else {
-          address = `${coords.lat}, ${coords.lng}`;
-        }
+    // Validate URL first
+    if (!urlParserService.isValidGoogleMapsUrl(gmapsLink)) {
+      setGmapsError('Link Google Maps tidak valid. Hanya link dari google.com dan maps.app.goo.gl yang didukung.');
+      return;
+    }
 
-        console.log('✅ Address hasil reverse geocoding:', address);
-        
-        // Use ORIGINAL coordinates without any rounding
-        onLocationSelect(coords.lat, coords.lng, address);
-        setGmapsLink('');
-        setInputMode('autocomplete');
-        toast.success('Lokasi berhasil diambil dari Google Maps!');
-      } catch (error) {
-        console.error('❌ Error Geoapify reverse geocoding:', error);
-        
-        // Fallback to Nominatim (OpenStreetMap) - Free, no API key needed
+    setIsParsingUrl(true);
+
+    try {
+      const coords = await parseGoogleMapsLink(gmapsLink);
+      
+      if (coords) {
+        console.log('✅ Koordinat asli dari Google Maps:', coords);
+
+        // Reverse geocode to get address - Try Geoapify first
         try {
-          const nominatimResponse = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.lat}&lon=${coords.lng}&zoom=18&addressdetails=1`
+          const response = await fetch(
+            `https://api.geoapify.com/v1/geocode/reverse?lat=${coords.lat}&lon=${coords.lng}&apiKey=${apiKey}&lang=en`
           );
-          const nominatimData = await nominatimResponse.json();
-          console.log('📍 Nominatim fallback result:', nominatimData);
-          
-          const address = nominatimData.display_name || `${coords.lat}, ${coords.lng}`;
-          
-          // Use ORIGINAL coordinates without any rounding
+          const data = await response.json();
+          console.log('📍 Geoapify reverse geocoding result:', data);
+
+          const feature = data.features?.[0];
+          let address = '';
+
+          if (feature?.properties) {
+            const props = feature.properties;
+            const street = props.street || props.road || props.address_line1 || '';
+            const suburb = props.suburb || props.neighbourhood || props.city_district || '';
+            const city = props.city || props.town || props.village || '';
+            const state = props.state || '';
+            const postcode = props.postcode || '';
+
+            const parts = [street, suburb, city, state, postcode].filter(Boolean);
+            address = parts.join(', ') || props.formatted || `${coords.lat}, ${coords.lng}`;
+          } else {
+            address = `${coords.lat}, ${coords.lng}`;
+          }
+
+          console.log('✅ Address hasil reverse geocoding:', address);
+
           onLocationSelect(coords.lat, coords.lng, address);
           setGmapsLink('');
           setInputMode('autocomplete');
-          toast.success('Lokasi berhasil diambil (via OpenStreetMap)!');
-        } catch (nominatimError) {
-          console.error('❌ Error Nominatim fallback:', nominatimError);
-          // Last resort: just use coordinates
-          const coordAddress = `Koordinat: ${coords.lat}, ${coords.lng}`;
-          
-          // Use ORIGINAL coordinates without any rounding
-          onLocationSelect(coords.lat, coords.lng, coordAddress);
-          setGmapsLink('');
-          setInputMode('autocomplete');
+          toast.success('Lokasi berhasil diambil dari Google Maps!');
+        } catch (error) {
+          console.error('❌ Error Geoapify reverse geocoding:', error);
+
+          // Fallback to Nominatim (OpenStreetMap)
+          try {
+            const nominatimResponse = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.lat}&lon=${coords.lng}&zoom=18&addressdetails=1`
+            );
+            const nominatimData = await nominatimResponse.json();
+            console.log('📍 Nominatim fallback result:', nominatimData);
+
+            const address = nominatimData.display_name || `${coords.lat}, ${coords.lng}`;
+
+            onLocationSelect(coords.lat, coords.lng, address);
+            setGmapsLink('');
+            setInputMode('autocomplete');
+            toast.success('Lokasi berhasil diambil (via OpenStreetMap)!');
+          } catch (nominatimError) {
+            console.error('❌ Error Nominatim fallback:', nominatimError);
+            const coordAddress = `Koordinat: ${coords.lat}, ${coords.lng}`;
+
+            onLocationSelect(coords.lat, coords.lng, coordAddress);
+            setGmapsLink('');
+            setInputMode('autocomplete');
+          }
         }
+      } else {
+        setGmapsError('Tidak dapat mengekstrak koordinat dari link. Pastikan link mengarah ke lokasi spesifik di Google Maps.');
       }
-    } else {
-      // Check if it's a shortened URL
-      try {
-        const urlObj = new URL(gmapsLink);
-        if (urlObj.hostname.includes('goo.gl') || urlObj.hostname.includes('maps.app.goo.gl')) {
-          setGmapsError('Link pendek Google Maps tidak dapat diparsing. Silakan gunakan link lengkap dengan koordinat (contoh: https://www.google.com/maps?q=-6.2088,106.8456)');
-        } else {
-          setGmapsError('Link Google Maps tidak valid. Pastikan link berisi koordinat.');
-        }
-      } catch (e) {
-        setGmapsError('Link Google Maps tidak valid. Pastikan link berisi koordinat.');
-      }
+    } catch (error) {
+      console.error('❌ Error parsing Google Maps link:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan saat memproses link Google Maps';
+      setGmapsError(errorMessage);
+    } finally {
+      setIsParsingUrl(false);
     }
   };
 
@@ -463,13 +461,25 @@ export default function AddressAutocomplete({ onLocationSelect, initialAddress =
               className={`flex-1 px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 gmapsError ? 'border-red-500' : 'border-slate-300'
               }`}
+              disabled={isParsingUrl}
             />
             <button
               type="button"
               onClick={handleGmapsLinkSubmit}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={isParsingUrl || !gmapsLink.trim()}
+              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Ambil Lokasi
+              {isParsingUrl ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Memproses...
+                </>
+              ) : (
+                'Ambil Lokasi'
+              )}
             </button>
           </div>
           {gmapsError && (
@@ -480,13 +490,15 @@ export default function AddressAutocomplete({ onLocationSelect, initialAddress =
             <ol className="text-xs text-blue-700 list-decimal list-inside space-y-1">
               <li>Buka Google Maps di browser (desktop/mobile)</li>
               <li>Klik kanan pada lokasi yang diinginkan</li>
-              <li>Klik angka koordinat (contoh: -6.2088, 106.8456)</li>
-              <li>URL akan berubah menjadi link dengan koordinat</li>
-              <li>Salin URL dari browser (contoh: https://www.google.com/maps?q=-6.2088,106.8456)</li>
+              <li>Klik "Bagikan" atau "Share"</li>
+              <li>Salin link (bisa link pendek atau link lengkap)</li>
               <li>Tempel link di kolom di atas</li>
             </ol>
-            <p className="text-xs text-blue-600 mt-2 font-medium">⚠️ Catatan:</p>
-            <p className="text-xs text-blue-600">Link pendek (maps.app.goo.gl) tidak didukung. Gunakan link lengkap dari browser.</p>
+            <p className="text-xs text-blue-600 mt-2 font-medium">✅ Mendukung:</p>
+            <ul className="text-xs text-blue-600 list-disc list-inside space-y-1">
+              <li>Link pendek: maps.app.goo.gl/xxx, goo.gl/maps/xxx</li>
+              <li>Link lengkap: google.com/maps/place/...</li>
+            </ul>
           </div>
           <p className="text-xs text-slate-500">
             💡 Mendukung link Google Maps lengkap dengan koordinat
