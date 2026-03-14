@@ -3,20 +3,19 @@ import type { ParseMapsUrlRequest, ParseMapsUrlResponse } from '@/shared/types/s
 
 /**
  * Google Maps URL Parser Service
- * 
+ *
  * Parses Google Maps URLs (including shortened URLs like maps.app.goo.gl)
  * and extracts latitude/longitude coordinates.
- * 
- * @see POST /api/v1/parse-maps-url
+ *
+ * Backend Endpoint: POST /api/parse-maps-url
  */
 export const urlParserService = {
   /**
    * Parse a Google Maps URL to extract coordinates
-   * 
+   *
    * @param url - Google Maps URL (supports shortened and full URLs)
-   * @param token - JWT authentication token (optional, will use stored token if not provided)
    * @returns Promise with parsed coordinates
-   * 
+   *
    * @example
    * ```typescript
    * const coords = await urlParserService.parseMapsUrl('https://maps.app.goo.gl/abc123');
@@ -41,9 +40,29 @@ export const urlParserService = {
       if (error instanceof Error) {
         // Handle axios errors
         const axiosError = error as any;
+        
+        // Check for 404 - endpoint not found
+        if (axiosError.response?.status === 404) {
+          throw new Error(
+            'Endpoint parse URL belum tersedia. Pastikan backend sudah diupdate dengan endpoint POST /api/parse-maps-url'
+          );
+        }
+        
+        // Check for 401 - unauthorized
+        if (axiosError.response?.status === 401) {
+          throw new Error('Session expired. Silakan login ulang.');
+        }
+        
+        // Check for 429 - rate limit
+        if (axiosError.response?.status === 429) {
+          throw new Error('Terlalu banyak request. Silakan tunggu beberapa saat.');
+        }
+        
+        // Use error from response if available
         if (axiosError.response?.data?.error) {
           throw new Error(axiosError.response.data.error);
         }
+        
         throw error;
       }
       throw new Error('Failed to parse Google Maps URL');

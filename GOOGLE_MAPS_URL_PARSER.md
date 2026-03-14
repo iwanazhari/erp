@@ -5,7 +5,7 @@
 Frontend sekarang mendukung **semua format Google Maps URLs**, termasuk **shortened URLs** (`maps.app.goo.gl`, `goo.gl/maps`).
 
 **Tanggal Implementasi**: 2026-03-13  
-**Backend Endpoint**: `POST /api/v1/parse-maps-url`  
+**Backend Endpoint**: `POST /api/parse-maps-url`  
 **Status**: ✅ Ready for Production
 
 ---
@@ -130,7 +130,7 @@ src/
 
 1. **User pastes URL** → Input field
 2. **Frontend validates** → `urlParserService.isValidGoogleMapsUrl()`
-3. **If shortened URL** → Call backend `/api/v1/parse-maps-url`
+3. **If shortened URL** → Call backend `/api/parse-maps-url`
 4. **If full URL** → Parse locally (faster, no API call)
 5. **Extract coordinates** → Update form state
 6. **Reverse geocode** → Get address from coordinates
@@ -180,7 +180,7 @@ src/
 
 ### Backend API Contract
 
-**Endpoint**: `POST /api/v1/parse-maps-url`
+**Endpoint**: `POST /api/parse-maps-url`
 
 **Request**:
 ```json
