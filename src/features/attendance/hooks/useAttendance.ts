@@ -9,7 +9,7 @@ import type {
 // Query keys
 export const attendanceKeys = {
   all: ['attendance'] as const,
-  history: (filters: AttendanceHistoryFilters) => [...attendanceKeys.all, 'history', filters] as const,
+  list: (filters: AttendanceHistoryFilters) => [...attendanceKeys.all, 'list', filters] as const,
   userHistory: (userId: string, filters?: Omit<AttendanceHistoryFilters, 'userId'>) =>
     [...attendanceKeys.all, 'user-history', userId, filters] as const,
   userStats: (userId: string, filters?: AttendanceStatsFilters) =>
@@ -21,12 +21,13 @@ export const attendanceKeys = {
 };
 
 /**
- * Hook to fetch attendance history with filters
+ * Hook to fetch all attendance records with filters
+ * Uses GET /api/attendance endpoint
  */
 export function useAttendanceHistory(filters: AttendanceHistoryFilters = {}) {
   return useQuery({
-    queryKey: attendanceKeys.history(filters),
-    queryFn: () => attendanceApi.getHistory(filters),
+    queryKey: attendanceKeys.list(filters),
+    queryFn: () => attendanceApi.getAll(filters),
     select: (data) => data.data,
   });
 }

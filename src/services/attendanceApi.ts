@@ -14,12 +14,15 @@ import type {
  * Attendance API Service
  *
  * Handles all attendance-related API calls
+ * 
+ * Primary Endpoint: GET /api/attendance
  */
 export const attendanceApi = {
   /**
-   * Get all attendance history with filters and pagination
+   * Get all attendance records with filters and pagination
+   * Primary endpoint: GET /api/attendance
    */
-  getHistory: async (filters?: AttendanceHistoryFilters): Promise<ApiResponse<AttendanceHistoryData>> => {
+  getAll: async (filters?: AttendanceHistoryFilters): Promise<ApiResponse<AttendanceHistoryData>> => {
     const params = new URLSearchParams();
 
     if (filters?.companyId) params.append('companyId', filters.companyId);
@@ -31,9 +34,17 @@ export const attendanceApi = {
     if (filters?.pageSize) params.append('pageSize', String(filters.pageSize));
 
     const response = await privateApi.get<ApiResponse<AttendanceHistoryData>>(
-      `/attendance/history?${params}`
+      `/attendance?${params}`
     );
     return response.data;
+  },
+
+  /**
+   * Get attendance history (alias for getAll - backward compatibility)
+   * @deprecated Use getAll() instead
+   */
+  getHistory: async (filters?: AttendanceHistoryFilters): Promise<ApiResponse<AttendanceHistoryData>> => {
+    return attendanceApi.getAll(filters);
   },
 
   /**
@@ -96,14 +107,6 @@ export const attendanceApi = {
    */
   getById: async (id: string): Promise<ApiResponse<AttendanceRecord>> => {
     const response = await privateApi.get<ApiResponse<AttendanceRecord>>(`/attendance/${id}`);
-    return response.data;
-  },
-
-  /**
-   * Get all attendances (alternative endpoint)
-   */
-  getAll: async (): Promise<ApiResponse<AttendanceRecord[]>> => {
-    const response = await privateApi.get<ApiResponse<AttendanceRecord[]>>('/attendance');
     return response.data;
   },
 

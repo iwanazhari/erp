@@ -74,9 +74,9 @@ src/
 
 ## 🔌 Backend API Endpoints
 
-### 1. Get All Attendance History
+### Primary Endpoint - Get All Attendance
 ```
-GET /api/attendance/history
+GET /api/attendance
 ```
 **Query Parameters:**
 - `companyId` (optional)
@@ -87,19 +87,55 @@ GET /api/attendance/history
 - `page` (optional, default: 1)
 - `pageSize` (optional, default: 20, max: 100)
 
-### 2. Get User History
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "page": 1,
+    "pageSize": 20,
+    "total": 150,
+    "totalPages": 8,
+    "records": [
+      {
+        "id": "att-001",
+        "userId": "user-123",
+        "date": "2026-03-14",
+        "clockIn": "2026-03-14T08:00:00+07:00",
+        "clockOut": "2026-03-14T17:00:00+07:00",
+        "status": "present",
+        ...
+      }
+    ]
+  }
+}
+```
+
+### Other Endpoints
+
+### Get User History
 ```
 GET /api/attendance/history/user/:userId
 ```
 
-### 3. Get User Statistics
+### Get User Statistics
 ```
 GET /api/attendance/stats/user/:userId
 ```
 
-### 4. Get Monthly Attendance
+### Get Monthly Attendance
 ```
 GET /api/attendance/monthly
+```
+
+### Get Attendance by ID
+```
+GET /api/attendance/:id
+```
+
+### Get Daily Status
+```
+GET /api/attendance/status/daily
 ```
 
 ---
