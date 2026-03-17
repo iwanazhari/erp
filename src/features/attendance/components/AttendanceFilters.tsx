@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import type { AttendanceHistoryFilters } from '@/shared/types/attendance';
+import type { AttendanceRecordsFilters } from '@/shared/types/attendance';
 
 interface AttendanceFiltersProps {
-  filters: AttendanceHistoryFilters;
-  onFilterChange: (filters: AttendanceHistoryFilters) => void;
+  filters: AttendanceRecordsFilters;
+  onFilterChange: (filters: AttendanceRecordsFilters) => void;
   onSearch: () => void;
   isLoading?: boolean;
 }
@@ -14,9 +14,9 @@ export function AttendanceFilters({
   onSearch,
   isLoading,
 }: AttendanceFiltersProps) {
-  const [localFilters, setLocalFilters] = useState<AttendanceHistoryFilters>({ ...filters });
+  const [localFilters, setLocalFilters] = useState<AttendanceRecordsFilters>({ ...filters });
 
-  const handleInputChange = (key: keyof AttendanceHistoryFilters, value: string) => {
+  const handleInputChange = (key: keyof AttendanceRecordsFilters, value: string) => {
     setLocalFilters((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -26,7 +26,7 @@ export function AttendanceFilters({
   };
 
   const handleReset = () => {
-    const emptyFilters: AttendanceHistoryFilters = {};
+    const emptyFilters: AttendanceRecordsFilters = {};
     setLocalFilters(emptyFilters);
     onFilterChange(emptyFilters);
   };
@@ -73,38 +73,26 @@ export function AttendanceFilters({
             <option value="">Semua Status</option>
             <option value="present">Hadir</option>
             <option value="late">Terlambat</option>
-            <option value="leave">Cuti</option>
+            <option value="leave">Cuti/Izin</option>
             <option value="absent">Tidak Hadir</option>
           </select>
         </div>
 
-        {/* Company (optional - can be enabled if needed) */}
-        {/* <div>
+        {/* Clock Out Status */}
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Company
+            Status Clock Out
           </label>
-          <input
-            type="text"
-            value={localFilters.companyId || ''}
-            onChange={(e) => handleInputChange('companyId', e.target.value)}
-            placeholder="Company ID"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-          />
-        </div> */}
-
-        {/* User (optional - can be enabled if needed) */}
-        {/* <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            User ID
-          </label>
-          <input
-            type="text"
-            value={localFilters.userId || ''}
-            onChange={(e) => handleInputChange('userId', e.target.value)}
-            placeholder="User ID"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-          />
-        </div> */}
+          <select
+            value={localFilters.clockOutStatus || ''}
+            onChange={(e) => handleInputChange('clockOutStatus', e.target.value)}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Semua Status</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
 
         {/* Action Buttons */}
         <div className="flex items-end gap-2">

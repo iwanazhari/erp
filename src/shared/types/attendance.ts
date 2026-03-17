@@ -1,6 +1,6 @@
 // Attendance Types based on Backend API Documentation
 
-export type AttendanceStatus = 'present' | 'late' | 'leave' | 'absent';
+export type AttendanceStatus = 'present' | 'late' | 'leave' | 'absent' | 'HADIR' | 'TERLAMBAT' | 'ALPA' | 'IZIN' | 'SAKIT' | 'TECHNICIAN_CHECKED_IN' | 'TECHNICIAN_AT_JOB_SITE';
 export type ClockOutStatus = 'completed' | 'pending';
 
 export interface User {
@@ -31,6 +31,21 @@ export interface PaymentTransaction {
   status: string;
 }
 
+export interface Photo {
+  id: string;
+  url: string;
+  type: string;
+  timestamp: string;
+}
+
+export interface LeaveInfo {
+  id: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+}
+
 export interface AttendanceRecord {
   id: string;
   userId: string;
@@ -49,16 +64,67 @@ export interface AttendanceRecord {
   company: Company;
   office: Office;
   paymentTransaction: PaymentTransaction | null;
+  photos?: Photo[];
+  leaveInfo?: LeaveInfo;
   createdAt: string;
   updatedAt: string;
 }
 
+/**
+ * Attendance History Response Format (GET /api/attendance/history)
+ * Uses 'attendances' array and 'pagination' object
+ */
 export interface AttendanceHistoryData {
+  attendances: AttendanceRecord[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+/**
+ * Attendance Records Response Format (GET /api/attendance/records)
+ * Admin endpoint - includes comprehensive data with photos, leave info, etc.
+ */
+export interface AttendanceRecordsData {
+  records: AttendanceRecord[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// Monthly Attendance User Record (new format from backend)
+export interface MonthlyAttendanceUser {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  counts: {
+    HADIR: number;
+    TERLAMBAT: number;
+    ALPA: number;
+    IZIN: number;
+    SAKIT: number;
+    TECHNICIAN_CHECKED_IN: number;
+    TECHNICIAN_AT_JOB_SITE: number;
+  };
+  lastClockIn: string | null;
+  lastClockOut: string | null;
+}
+
+export interface MonthlyAttendanceData {
+  year: number;
+  month: number;
   page: number;
   pageSize: number;
-  total: number;
+  totalUsers: number;
   totalPages: number;
-  records: AttendanceRecord[];
+  users: MonthlyAttendanceUser[];
 }
 
 export interface UserAttendanceStats {
@@ -93,6 +159,16 @@ export interface AttendanceHistoryFilters {
   startDate?: string;
   endDate?: string;
   status?: AttendanceStatus;
+  clockOutStatus?: ClockOutStatus;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AttendanceRecordsFilters {
+  startDate?: string;
+  endDate?: string;
+  status?: AttendanceStatus;
+  clockOutStatus?: ClockOutStatus;
   page?: number;
   pageSize?: number;
 }

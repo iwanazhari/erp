@@ -1,7 +1,7 @@
-import type { AttendanceRecord } from '@/shared/types/attendance';
+import type { AttendanceRecord, MonthlyAttendanceUser } from '@/shared/types/attendance';
 
 interface AttendanceDetailsModalProps {
-  record: AttendanceRecord | null;
+  record: AttendanceRecord | MonthlyAttendanceUser | null;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -12,6 +12,99 @@ export function AttendanceDetailsModal({
   onClose,
 }: AttendanceDetailsModalProps) {
   if (!isOpen || !record) return null;
+
+  // Check if it's a MonthlyAttendanceUser record
+  const isMonthlyUser = 'counts' in record;
+
+  if (isMonthlyUser) {
+    const user = record as MonthlyAttendanceUser;
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose} />
+        <div className="flex min-h-full items-center justify-center p-4">
+          <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Detail Attendance</h3>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Informasi Karyawan</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-gray-500">Nama:</span>
+                    <p className="font-medium text-gray-900">{user.name}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Email:</span>
+                    <p className="font-medium text-gray-900">{user.email}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Role:</span>
+                    <p className="font-medium text-gray-900">{user.role}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Ringkasan Attendance</h4>
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <p className="text-2xl font-bold text-green-600">{user.counts.HADIR}</p>
+                    <p className="text-xs text-green-700 mt-1">Hadir</p>
+                  </div>
+                  <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                    <p className="text-2xl font-bold text-yellow-600">{user.counts.TERLAMBAT}</p>
+                    <p className="text-xs text-yellow-700 mt-1">Terlambat</p>
+                  </div>
+                  <div className="text-center p-3 bg-red-50 rounded-lg">
+                    <p className="text-2xl font-bold text-red-600">{user.counts.ALPA}</p>
+                    <p className="text-xs text-red-700 mt-1">Alpa</p>
+                  </div>
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <p className="text-2xl font-bold text-blue-600">{user.counts.IZIN}</p>
+                    <p className="text-xs text-blue-700 mt-1">Izin</p>
+                  </div>
+                  <div className="text-center p-3 bg-purple-50 rounded-lg">
+                    <p className="text-2xl font-bold text-purple-600">{user.counts.SAKIT}</p>
+                    <p className="text-xs text-purple-700 mt-1">Sakit</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Clock In/Out Terakhir</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-gray-500">Clock In:</span>
+                    <p className="font-medium text-gray-900">
+                      {user.lastClockIn ? new Date(user.lastClockIn).toLocaleString('id-ID') : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Clock Out:</span>
+                    <p className="font-medium text-gray-900">
+                      {user.lastClockOut ? new Date(user.lastClockOut).toLocaleString('id-ID') : '-'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button onClick={onClose} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors">
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle AttendanceRecord format (existing implementation)
+  // This section handles the detailed daily attendance view
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {

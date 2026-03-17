@@ -1,13 +1,13 @@
 import type { AttendanceRecord } from '@/shared/types/attendance';
 
 interface AttendanceHistoryTableProps {
-  records: AttendanceRecord[];
+  attendances: AttendanceRecord[];
   isLoading?: boolean;
   onViewDetails?: (record: AttendanceRecord) => void;
 }
 
 export function AttendanceHistoryTable({
-  records,
+  attendances,
   isLoading,
   onViewDetails,
 }: AttendanceHistoryTableProps) {
@@ -32,6 +32,13 @@ export function AttendanceHistoryTable({
       late: 'bg-yellow-100 text-yellow-800',
       leave: 'bg-blue-100 text-blue-800',
       absent: 'bg-red-100 text-red-800',
+      HADIR: 'bg-green-100 text-green-800',
+      TERLAMBAT: 'bg-yellow-100 text-yellow-800',
+      ALPA: 'bg-red-100 text-red-800',
+      IZIN: 'bg-blue-100 text-blue-800',
+      SAKIT: 'bg-purple-100 text-purple-800',
+      TECHNICIAN_CHECKED_IN: 'bg-indigo-100 text-indigo-800',
+      TECHNICIAN_AT_JOB_SITE: 'bg-cyan-100 text-cyan-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -42,6 +49,13 @@ export function AttendanceHistoryTable({
       late: 'Terlambat',
       leave: 'Cuti',
       absent: 'Tidak Hadir',
+      HADIR: 'Hadir',
+      TERLAMBAT: 'Terlambat',
+      ALPA: 'Alpa',
+      IZIN: 'Izin',
+      SAKIT: 'Sakit',
+      TECHNICIAN_CHECKED_IN: 'Check-in',
+      TECHNICIAN_AT_JOB_SITE: 'Di Lokasi',
     };
     return labels[status] || status;
   };
@@ -58,7 +72,7 @@ export function AttendanceHistoryTable({
     );
   }
 
-  if (!records || records.length === 0) {
+  if (!attendances || attendances.length === 0) {
     return (
       <div className="text-center py-8">
         <svg className="h-12 w-12 text-gray-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -69,6 +83,7 @@ export function AttendanceHistoryTable({
     );
   }
 
+  // Render Daily Attendance Table
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -98,7 +113,7 @@ export function AttendanceHistoryTable({
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {records.map((record) => (
+          {attendances.map((record) => (
             <tr key={record.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-4 py-3 whitespace-nowrap">
                 <div>

@@ -2,38 +2,152 @@ import { useQuery } from '@tanstack/react-query';
 import { attendanceApi } from '@/services/attendanceApi';
 import type {
   AttendanceHistoryFilters,
-  AttendanceStatsFilters,
+  AttendanceRecordsFilters,
   MonthlyAttendanceFilters,
 } from '@/shared/types/attendance';
 
-// Query keys
+/**
+ * Attendance Query Keys Factory
+ *
+ * Provides type-safe query keys for React Query caching
+ */
 export const attendanceKeys = {
   all: ['attendance'] as const,
-  list: (filters: AttendanceHistoryFilters) => [...attendanceKeys.all, 'list', filters] as const,
+  /** History list query key with filters */
+  history: (filters: AttendanceHistoryFilters) => [...attendanceKeys.all, 'history', filters] as const,
+  /** Records list query key with filters (Admin) */
+  records: (filters: AttendanceRecordsFilters) => [...attendanceKeys.all, 'records', filters] as const,
+  /** User-specific history query key */
   userHistory: (userId: string, filters?: Omit<AttendanceHistoryFilters, 'userId'>) =>
     [...attendanceKeys.all, 'user-history', userId, filters] as const,
-  userStats: (userId: string, filters?: AttendanceStatsFilters) =>
-    [...attendanceKeys.all, 'stats', userId, filters] as const,
+  /** Monthly attendance summary query key */
   monthly: (filters?: MonthlyAttendanceFilters) =>
     [...attendanceKeys.all, 'monthly', filters] as const,
+  /** Single attendance record by ID */
   byId: (id: string) => [...attendanceKeys.all, 'detail', id] as const,
+  /** Daily status overview */
   dailyStatus: () => [...attendanceKeys.all, 'daily-status'] as const,
 };
 
 /**
- * Hook to fetch all attendance records with filters
- * Uses GET /api/attendance endpoint
+ * Hook to fetch attendance history with filters
+ *
+ * Uses GET /api/attendance/history - the primary endpoint for attendance history
+ *
+ * Response format:
+ * {
+ *   success: true,
+ *   message: "OK",
+ *   data: {
+ *     attendances: [...],
+ *     pagination: { page, pageSize, total, totalPages }
+ *   }
+ * }
+ *
+ * @param filters - Query parameters (companyId, startDate, endDate, status, page, pageSize)
+ * @returns Query result with attendance history data
+ *
+ * @example
+ * ```tsx
+ * const { data, isLoading } = useAttendanceHistory({
+ *   startDate: '2026-03-01',
+ *   endDate: '2026-03-31',
+ *   page: 1,
+ *   pageSize: 50,
+ * });
+ *
+ * // data.attendances - Array of attendance records
+ * // data.pagination - Pagination info
+ * ```
  */
 export function useAttendanceHistory(filters: AttendanceHistoryFilters = {}) {
   return useQuery({
-    queryKey: attendanceKeys.list(filters),
-    queryFn: () => attendanceApi.getAll(filters),
-    select: (data) => data.data,
+    queryKey: attendanceKeys.history(filters),
+    queryFn: async () => {
+      const response = await attendanceApi.getHistory(filters);
+      // Handle both nested and flat response structures
+      return response.data;
+    },
+    select: (data) => {
+      // If data is already the AttendanceHistoryData format
+      if (data && 'attendances' in data && 'pagination' in data) {
+        return data;
+      }
+      // If data is nested inside another data object
+      if (data && (data as any).data) {
+        return (data as any).data;
+      }
+      // Return data as-is if no structure matches
+      return data;
+    },
+  });
+}
+
+/**
+ * Hook to fetch all attendance records (Admin only)
+ *
+ * Uses GET /api/attendance/records - Admin endpoint for comprehensive attendance data
+ *
+ * Features:
+ * - View all attendance data from all users (clock in & clock out)
+ * - No companyId filter - ADMIN can see all data from all companies
+ * - Optional filters: date range, status, clockOutStatus
+ * - Pagination support (default 50, max 100 per page)
+ *
+ * Response includes:
+ * - Clock in/out time & location (GPS)
+ * - Photos (selfie, job completion, signature, etc.)
+ * - User info (name, email, role, phone)
+ * - Company & office info
+ * - Payment info (for technician)
+ * - Leave info (if applicable)
+ * - Technician tracking info
+ *
+ * @param filters - Query parameters (startDate, endDate, status, clockOutStatus, page, pageSize)
+ * @returns Query result with attendance records data
+ *
+ * @example
+ * ```tsx
+ * const { data, isLoading } = useAttendanceRecords({
+ *   startDate: '2026-03-01',
+ *   endDate: '2026-03-31',
+ *   page: 1,
+ *   pageSize: 50,
+ * });
+ *
+ * // data.records - Array of attendance records with photos, leave info, etc.
+ * // data.pagination - Pagination info
+ * ```
+ */
+export function useAttendanceRecords(filters: AttendanceRecordsFilters = {}) {
+  return useQuery({
+    queryKey: attendanceKeys.records(filters),
+    queryFn: async () => {
+      const response = await attendanceApi.getAllRecords(filters);
+      return response.data;
+    },
+    select: (data) => {
+      // Handle nested response structure
+      if (data && 'records' in data && 'pagination' in data) {
+        return data;
+      }
+      // If data is nested inside another data object
+      if (data && (data as any).data) {
+        return (data as any).data;
+      }
+      return data;
+    },
   });
 }
 
 /**
  * Hook to fetch attendance history for a specific user
+ * 
+ * Uses GET /api/attendance/history/user/:userId endpoint
+ * 
+ * @param userId - The user ID to fetch history for
+ * @param filters - Optional filters (startDate, endDate, status, page, pageSize)
+ * @returns Query result with user's attendance history
  */
 export function useUserAttendanceHistory(
   userId: string,
@@ -48,19 +162,19 @@ export function useUserAttendanceHistory(
 }
 
 /**
- * Hook to fetch attendance statistics for a user
- */
-export function useUserAttendanceStats(userId: string, filters?: AttendanceStatsFilters) {
-  return useQuery({
-    queryKey: attendanceKeys.userStats(userId, filters),
-    queryFn: () => attendanceApi.getUserStats(userId, filters),
-    select: (data) => data.data,
-    enabled: !!userId,
-  });
-}
-
-/**
- * Hook to fetch monthly attendance summary
+ * Hook to fetch monthly attendance summary for all users
+ * 
+ * Uses GET /api/attendance/monthly endpoint
+ * Returns aggregated counts per user (not detailed records)
+ * 
+ * @param filters - Optional filters (month, year, companyId)
+ * @returns Query result with monthly attendance summary
+ * 
+ * @example
+ * ```tsx
+ * const { data } = useMonthlyAttendance({ month: 3, year: 2026 });
+ * // Returns: { users: [{ userId, name, counts: { HADIR: 15, ... } }] }
+ * ```
  */
 export function useMonthlyAttendance(filters?: MonthlyAttendanceFilters) {
   return useQuery({
@@ -71,7 +185,12 @@ export function useMonthlyAttendance(filters?: MonthlyAttendanceFilters) {
 }
 
 /**
- * Hook to fetch attendance by ID
+ * Hook to fetch a single attendance record by ID
+ * 
+ * Uses GET /api/attendance/:id endpoint
+ * 
+ * @param id - The attendance record ID
+ * @returns Query result with single attendance record
  */
 export function useAttendanceById(id: string) {
   return useQuery({
@@ -83,7 +202,11 @@ export function useAttendanceById(id: string) {
 }
 
 /**
- * Hook to fetch daily status
+ * Hook to fetch daily attendance status overview
+ * 
+ * Uses GET /api/attendance/status/daily endpoint
+ * 
+ * @returns Query result with daily status summary
  */
 export function useDailyStatus() {
   return useQuery({
