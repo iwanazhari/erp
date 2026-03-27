@@ -7,6 +7,9 @@ import type {
   AttendanceRecordsFilters,
   MonthlyAttendanceData,
   MonthlyAttendanceFilters,
+  MonthlyReportExportFilters,
+  HistoryExportFilters,
+  AllRecordsExportFilters,
   ApiResponse,
 } from '@/shared/types/attendance';
 
@@ -141,6 +144,80 @@ export const attendanceApi = {
    */
   getDailyStatus: async (): Promise<ApiResponse<any>> => {
     const response = await privateApi.get<ApiResponse<any>>('/attendance/status/daily');
+    return response.data;
+  },
+
+  /**
+   * Export Monthly Report to Excel
+   * Endpoint: GET /api/attendance/export/monthly
+   * Access: ADMIN, MANAGER
+   * 
+   * @param filters - Export filters (year, month, search query)
+   * @returns Blob (Excel file)
+   */
+  exportMonthlyReport: async (filters?: MonthlyReportExportFilters): Promise<Blob> => {
+    const params = new URLSearchParams();
+
+    if (filters?.year) params.append('year', String(filters.year));
+    if (filters?.month) params.append('month', String(filters.month));
+    if (filters?.q) params.append('q', filters.q);
+
+    const response = await privateApi.get<Blob>(
+      `/attendance/export/monthly?${params}`,
+      {
+        responseType: 'blob',
+      }
+    );
+    return response.data;
+  },
+
+  /**
+   * Export Attendance History to Excel
+   * Endpoint: GET /api/attendance/export/history
+   * Access: ADMIN, MANAGER
+   * 
+   * @param filters - Export filters (startDate, endDate, userId, status)
+   * @returns Blob (Excel file)
+   */
+  exportHistory: async (filters?: HistoryExportFilters): Promise<Blob> => {
+    const params = new URLSearchParams();
+
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.userId) params.append('userId', filters.userId);
+    if (filters?.status) params.append('status', filters.status);
+
+    const response = await privateApi.get<Blob>(
+      `/attendance/export/history?${params}`,
+      {
+        responseType: 'blob',
+      }
+    );
+    return response.data;
+  },
+
+  /**
+   * Export All Attendance Records to Excel
+   * Endpoint: GET /api/attendance/export/records
+   * Access: ADMIN ONLY
+   * 
+   * @param filters - Export filters (startDate, endDate, status, clockOutStatus)
+   * @returns Blob (Excel file)
+   */
+  exportAllRecords: async (filters?: AllRecordsExportFilters): Promise<Blob> => {
+    const params = new URLSearchParams();
+
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.clockOutStatus) params.append('clockOutStatus', filters.clockOutStatus);
+
+    const response = await privateApi.get<Blob>(
+      `/attendance/export/records?${params}`,
+      {
+        responseType: 'blob',
+      }
+    );
     return response.data;
   },
 };

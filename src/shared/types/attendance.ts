@@ -184,6 +184,27 @@ export interface MonthlyAttendanceFilters {
   companyId?: string;
 }
 
+// Excel Export Filter Types
+export interface MonthlyReportExportFilters {
+  year?: number;
+  month?: number;
+  q?: string; // Search by name/email
+}
+
+export interface HistoryExportFilters {
+  startDate?: string;
+  endDate?: string;
+  userId?: string;
+  status?: AttendanceStatus;
+}
+
+export interface AllRecordsExportFilters {
+  startDate?: string;
+  endDate?: string;
+  status?: AttendanceStatus;
+  clockOutStatus?: ClockOutStatus;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;

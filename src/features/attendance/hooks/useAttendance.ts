@@ -6,6 +6,8 @@ import type {
   MonthlyAttendanceFilters,
 } from '@/shared/types/attendance';
 
+export { useAttendanceExport } from './useAttendanceExport';
+
 /**
  * Attendance Query Keys Factory
  *
