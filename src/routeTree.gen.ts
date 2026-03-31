@@ -13,8 +13,11 @@ import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LeaveRouteImport } from './routes/leave'
 import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ScheduleSalesRouteImport } from './routes/schedule.sales'
+import { Route as ScheduleMyRouteImport } from './routes/schedule.my'
 
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
@@ -36,6 +39,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LeaveRoute = LeaveRouteImport.update({
+  id: '/leave',
+  path: '/leave',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AttendanceRoute = AttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
@@ -46,60 +54,95 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ScheduleSalesRoute = ScheduleSalesRouteImport.update({
+  id: '/sales',
+  path: '/sales',
+  getParentRoute: () => ScheduleRoute,
+} as any)
+const ScheduleMyRoute = ScheduleMyRouteImport.update({
+  id: '/my',
+  path: '/my',
+  getParentRoute: () => ScheduleRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/leave': typeof LeaveRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
-  '/schedule': typeof ScheduleRoute
+  '/schedule': typeof ScheduleRouteWithChildren
+  '/schedule/my': typeof ScheduleMyRoute
+  '/schedule/sales': typeof ScheduleSalesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/leave': typeof LeaveRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
-  '/schedule': typeof ScheduleRoute
+  '/schedule': typeof ScheduleRouteWithChildren
+  '/schedule/my': typeof ScheduleMyRoute
+  '/schedule/sales': typeof ScheduleSalesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/leave': typeof LeaveRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
-  '/schedule': typeof ScheduleRoute
+  '/schedule': typeof ScheduleRouteWithChildren
+  '/schedule/my': typeof ScheduleMyRoute
+  '/schedule/sales': typeof ScheduleSalesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/attendance'
+    | '/leave'
     | '/login'
     | '/register'
     | '/reports'
     | '/schedule'
+    | '/schedule/my'
+    | '/schedule/sales'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/attendance' | '/login' | '/register' | '/reports' | '/schedule'
+  to:
+    | '/'
+    | '/attendance'
+    | '/leave'
+    | '/login'
+    | '/register'
+    | '/reports'
+    | '/schedule'
+    | '/schedule/my'
+    | '/schedule/sales'
   id:
     | '__root__'
     | '/'
     | '/attendance'
+    | '/leave'
     | '/login'
     | '/register'
     | '/reports'
     | '/schedule'
+    | '/schedule/my'
+    | '/schedule/sales'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AttendanceRoute: typeof AttendanceRoute
+  LeaveRoute: typeof LeaveRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ReportsRoute: typeof ReportsRoute
-  ScheduleRoute: typeof ScheduleRoute
+  ScheduleRoute: typeof ScheduleRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -132,6 +175,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/leave': {
+      id: '/leave'
+      path: '/leave'
+      fullPath: '/leave'
+      preLoaderRoute: typeof LeaveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/attendance': {
       id: '/attendance'
       path: '/attendance'
@@ -146,16 +196,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/schedule/sales': {
+      id: '/schedule/sales'
+      path: '/sales'
+      fullPath: '/schedule/sales'
+      preLoaderRoute: typeof ScheduleSalesRouteImport
+      parentRoute: typeof ScheduleRoute
+    }
+    '/schedule/my': {
+      id: '/schedule/my'
+      path: '/my'
+      fullPath: '/schedule/my'
+      preLoaderRoute: typeof ScheduleMyRouteImport
+      parentRoute: typeof ScheduleRoute
+    }
   }
 }
+
+interface ScheduleRouteChildren {
+  ScheduleMyRoute: typeof ScheduleMyRoute
+  ScheduleSalesRoute: typeof ScheduleSalesRoute
+}
+
+const ScheduleRouteChildren: ScheduleRouteChildren = {
+  ScheduleMyRoute: ScheduleMyRoute,
+  ScheduleSalesRoute: ScheduleSalesRoute,
+}
+
+const ScheduleRouteWithChildren = ScheduleRoute._addFileChildren(
+  ScheduleRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AttendanceRoute: AttendanceRoute,
+  LeaveRoute: LeaveRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ReportsRoute: ReportsRoute,
-  ScheduleRoute: ScheduleRoute,
+  ScheduleRoute: ScheduleRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

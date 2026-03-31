@@ -7,21 +7,21 @@ import type { Role } from "./types";
  */
 export const permissions = {
   attendance: {
-    view: ["admin", "supervisor", "technician"] as Role[],
-    edit: ["admin", "supervisor"] as Role[],
-    quickEditStatus: ["admin", "supervisor"] as Role[],
-    viewAudit: ["admin", "supervisor"] as Role[],
+    view: ["admin", "supervisor", "technician", "sales", "finance", "hr"] as Role[],
+    edit: ["admin", "supervisor", "hr"] as Role[],
+    quickEditStatus: ["admin", "supervisor", "hr"] as Role[],
+    viewAudit: ["admin", "supervisor", "hr"] as Role[],
     delete: ["admin"] as Role[],
-    export: ["admin", "supervisor"] as Role[],
+    export: ["admin", "supervisor", "hr"] as Role[],
   },
   schedule: {
-    view: ["admin", "supervisor", "technician"] as Role[],
-    edit: ["admin", "supervisor"] as Role[],
+    view: ["admin", "supervisor", "technician", "sales", "finance", "hr"] as Role[],
+    edit: ["admin", "supervisor", "sales", "hr"] as Role[],
     delete: ["admin"] as Role[],
   },
   reports: {
-    view: ["admin", "supervisor"] as Role[],
-    export: ["admin", "supervisor"] as Role[],
+    view: ["admin", "supervisor", "sales", "finance", "hr"] as Role[],
+    export: ["admin", "supervisor", "hr"] as Role[],
   },
 } as const;
 
@@ -77,4 +77,25 @@ export function canDeleteAttendance(role: Role): boolean {
  */
 export function canExportAttendance(role: Role): boolean {
   return can(role, "attendance", "export");
+}
+
+/**
+ * Check if role can view schedule
+ */
+export function canViewSchedule(role: Role): boolean {
+  return can(role, "schedule", "view");
+}
+
+/**
+ * Check if role can edit schedule
+ */
+export function canEditSchedule(role: Role): boolean {
+  return can(role, "schedule", "edit");
+}
+
+/**
+ * Check if role can delete schedule
+ */
+export function canDeleteSchedule(role: Role): boolean {
+  return can(role, "schedule", "delete");
 }

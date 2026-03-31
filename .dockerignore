@@ -1,0 +1,62 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json.tmp
+
+# Build output
+dist
+build
+*.tsbuildinfo
+
+# Environment files (NEVER include in Docker image)
+.env
+.env.local
+.env.development
+.env.production
+.env.docker
+.env.*.local
+
+# IDE and editor files
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+coverage
+.nyc_output
+*.log
+
+# TanStack Router generated files (will be regenerated)
+.tanstack
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker files (not needed inside container)
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+.dockerignore
+
+# Documentation (not needed in production image)
+*.md
+!README.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+
+# Misc
+*.map
+*.tgz
+*.tar
+*.zip

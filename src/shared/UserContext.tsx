@@ -6,6 +6,9 @@ import {
   canExportAttendance,
   canViewAudit,
   canQuickEditStatus,
+  canViewSchedule,
+  canEditSchedule,
+  canDeleteSchedule,
 } from "@/modules/auth/permissions";
 import type { User } from "@/modules/auth/types";
 
@@ -18,7 +21,10 @@ interface UserContextType {
   canExport: boolean;
   canViewAudit: boolean;
   canQuickEditStatus: boolean;
-  switchRole: (role: "admin" | "supervisor" | "technician") => void;
+  canViewSchedule: boolean;
+  canEditSchedule: boolean;
+  canDeleteSchedule: boolean;
+  switchRole: (role: "admin" | "supervisor" | "technician" | "sales" | "finance" | "hr") => void;
   logout: () => void;
 }
 
@@ -36,6 +42,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     canExport: canExportAttendance(user?.role ?? "technician"),
     canViewAudit: canViewAudit(user?.role ?? "technician"),
     canQuickEditStatus: canQuickEditStatus(user?.role ?? "technician"),
+    canViewSchedule: canViewSchedule(user?.role ?? "technician"),
+    canEditSchedule: canEditSchedule(user?.role ?? "technician"),
+    canDeleteSchedule: canDeleteSchedule(user?.role ?? "technician"),
     switchRole,
     logout,
   };

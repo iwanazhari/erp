@@ -1,0 +1,98 @@
+# =============================================================================
+# Docker Compose for Worksy ERP Frontend
+# =============================================================================
+# Version is optional in recent Docker Compose versions
+services:
+  # =============================================================================
+  # Production Service
+  # =============================================================================
+  worksy-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        # Build-time arguments (passed during docker build)
+        VITE_API_URL: ${VITE_API_URL:-http://worksy-backend:8080/api}
+        VITE_GEOAPIFY_API_KEY: ${VITE_GEOAPIFY_API_KEY:-}
+    container_name: worksy-frontend-prod
+    image: worksy-frontend:latest
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-80}:80"
+    networks:
+      - worksy-network
+    environment:
+      # Runtime environment variables (if needed)
+      - TZ=UTC
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - worksy-backend
+    labels:
+      - "app.name=worksy-erp"
+      - "app.component=frontend"
+      - "app.environment=production"
+    # Optional: Mount volumes for custom configurations
+    # volumes:
+    #   - ./custom-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # =============================================================================
+  # Backend Service Reference (for network connectivity)
+  # =============================================================================
+  # This service is already running on your server
+  # This is just a reference for network configuration
+  worksy-backend:
+    image: alpine:latest
+    container_name: worksy-backend
+    restart: unless-stopped
+    networks:
+      - worksy-network
+    # This is a placeholder - your actual backend is already running
+    # The purpose is to ensure network connectivity
+    command: ["sleep", "infinity"]
+    profiles:
+      - placeholder
+
+  # =============================================================================
+  # Development Service (Optional - uncomment for local development)
+  # =============================================================================
+  # worksy-frontend-dev:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #     target: development
+  #   container_name: worksy-frontend-dev
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5173:5173"
+  #   networks:
+  #     - worksy-network
+  #   volumes:
+  #     - .:/app
+  #     - /app/node_modules
+  #   environment:
+  #     - NODE_ENV=development
+  #     - VITE_API_URL=http://localhost:15320/api
+  #   command: npm run dev -- --host 0.0.0.0
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  worksy-network:
+    driver: bridge
+    name: worksy_worksy-network
+    external: true
+
+# =============================================================================
+# Volumes (Optional - for future use)
+# =============================================================================
+# volumes:
+#   worksy-data:
+#     driver: local
+#     name: worksy-data

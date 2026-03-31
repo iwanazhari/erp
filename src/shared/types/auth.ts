@@ -1,10 +1,12 @@
 // Authentication Types
 
+export type UserRole = 'ADMIN' | 'HR' | 'MANAGER' | 'TECHNICIAN' | 'TECHNICIAN_PAYMENT' | 'SALES' | 'FINANCE' | string;
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'HR' | 'MANAGER' | 'TECHNICIAN' | 'TECHNICIAN_PAYMENT' | string;
+  role: UserRole;
   phone?: string;
   companyId?: string;
   officeId?: string;

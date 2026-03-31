@@ -53,10 +53,10 @@ export default function AttendanceDrawer({
 
   return (
     <>
-      {/* Overlay */}
+      {/* Overlay with blur effect */}
       {selectedAttendance && (
         <div
-          className="fixed inset-0 bg-black/30 z-40 transition-opacity duration-300"
+          className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-40 transition-opacity duration-300"
           onClick={onClose}
         />
       )}

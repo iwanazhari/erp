@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { attendanceApi } from '@/services/attendanceApi';
 import type {
   AttendanceHistoryFilters,
@@ -215,5 +215,74 @@ export function useDailyStatus() {
     queryKey: attendanceKeys.dailyStatus(),
     queryFn: () => attendanceApi.getDailyStatus(),
     select: (data) => data.data,
+  });
+}
+
+/**
+ * Hook to update attendance record
+ *
+ * Uses PUT /api/attendance/:id endpoint
+ *
+ * @returns Mutation object with update function
+ *
+ * @example
+ * ```tsx
+ * const { mutate, isPending } = useUpdateAttendance();
+ *
+ * mutate({
+ *   id: 'att_123',
+ *   date: '2026-03-01',
+ *   checkIn: '09:00',
+ *   checkOut: '17:00',
+ *   status: 'HADIR',
+ *   editReason: 'Data correction - system error',
+ * });
+ * ```
+ */
+export function useUpdateAttendance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      id: string;
+      date: string;
+      checkIn: string;
+      checkOut?: string;
+      status: string;
+      editReason: string;
+    }) => {
+      // Import privateApi for the update request
+      const { privateApi } = await import('@/services/authApi');
+      
+      // Build the update payload according to backend API documentation
+      const payload: Record<string, any> = {
+        status: data.status,
+        editReason: data.editReason, // Required for audit trail
+      };
+
+      // If checkIn or checkOut is provided, we need to update the full datetime
+      // The backend expects full ISO datetime strings
+      if (data.checkIn) {
+        // Get the original date and combine with new time
+        const [year, month, day] = data.date.split('-').map(Number);
+        const [hours, minutes] = data.checkIn.split(':').map(Number);
+        const checkInDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+        payload.clockIn = checkInDate.toISOString();
+      }
+
+      if (data.checkOut) {
+        const [year, month, day] = data.date.split('-').map(Number);
+        const [hours, minutes] = data.checkOut.split(':').map(Number);
+        const checkOutDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+        payload.clockOut = checkOutDate.toISOString();
+      }
+
+      const response = await privateApi.put(`/attendance/${data.id}`, payload);
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate attendance queries to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+    },
   });
 }
