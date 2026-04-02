@@ -137,7 +137,7 @@ export default function AttendanceEditModal({
       {/* Modal - Larger size */}
       <div className="relative bg-white rounded-lg shadow-2xl max-w-2xl w-full mx-4 overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="bg-linear-to-r from-red-600 to-red-700 px-6 py-4">
+      <div className="bg-linear-to-r from-red-600 to-red-700 px-6 py-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-white">Edit Attendance</h2>
             <button

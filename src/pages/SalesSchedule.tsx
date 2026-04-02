@@ -393,7 +393,7 @@ export default function SalesSchedule() {
           <table className="w-full">
             <thead className="bg-slate-50 border-b">
               <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Teknisi</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Sales</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Lokasi</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Tanggal & Waktu</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Status</th>

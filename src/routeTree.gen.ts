@@ -14,6 +14,8 @@ import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LeaveRouteImport } from './routes/leave'
+import { Route as CustomHolidaysRouteImport } from './routes/custom-holidays'
+import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ScheduleSalesRouteImport } from './routes/schedule.sales'
@@ -44,6 +46,16 @@ const LeaveRoute = LeaveRouteImport.update({
   path: '/leave',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CustomHolidaysRoute = CustomHolidaysRouteImport.update({
+  id: '/custom-holidays',
+  path: '/custom-holidays',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AttendanceRoute = AttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
@@ -68,6 +80,8 @@ const ScheduleMyRoute = ScheduleMyRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/calendar': typeof CalendarRoute
+  '/custom-holidays': typeof CustomHolidaysRoute
   '/leave': typeof LeaveRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -79,6 +93,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/calendar': typeof CalendarRoute
+  '/custom-holidays': typeof CustomHolidaysRoute
   '/leave': typeof LeaveRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -91,6 +107,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/attendance': typeof AttendanceRoute
+  '/calendar': typeof CalendarRoute
+  '/custom-holidays': typeof CustomHolidaysRoute
   '/leave': typeof LeaveRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -104,6 +122,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/attendance'
+    | '/calendar'
+    | '/custom-holidays'
     | '/leave'
     | '/login'
     | '/register'
@@ -115,6 +135,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/attendance'
+    | '/calendar'
+    | '/custom-holidays'
     | '/leave'
     | '/login'
     | '/register'
@@ -126,6 +148,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/attendance'
+    | '/calendar'
+    | '/custom-holidays'
     | '/leave'
     | '/login'
     | '/register'
@@ -138,6 +162,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AttendanceRoute: typeof AttendanceRoute
+  CalendarRoute: typeof CalendarRoute
+  CustomHolidaysRoute: typeof CustomHolidaysRoute
   LeaveRoute: typeof LeaveRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
@@ -180,6 +206,20 @@ declare module '@tanstack/react-router' {
       path: '/leave'
       fullPath: '/leave'
       preLoaderRoute: typeof LeaveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/custom-holidays': {
+      id: '/custom-holidays'
+      path: '/custom-holidays'
+      fullPath: '/custom-holidays'
+      preLoaderRoute: typeof CustomHolidaysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/attendance': {
@@ -230,6 +270,8 @@ const ScheduleRouteWithChildren = ScheduleRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AttendanceRoute: AttendanceRoute,
+  CalendarRoute: CalendarRoute,
+  CustomHolidaysRoute: CustomHolidaysRoute,
   LeaveRoute: LeaveRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,

@@ -64,14 +64,14 @@ export const userApi = {
       const response = await privateApi.get('/user', {
         params: { page, limit }
       });
-      
+
       const users = response.data.data || response.data;
       const total = response.data.total || users.length;
-      
+
       if (Array.isArray(users)) {
         allUsers.push(...users);
       }
-      
+
       // Check if there are more pages
       const fetchedCount = page * limit;
       hasMore = fetchedCount < total && users.length === limit;
@@ -86,6 +86,42 @@ export const userApi = {
     return {
       success: true,
       data: technicians,
+    };
+  },
+
+  getSales: async (): Promise<ApiResponse<User[]>> => {
+    // Fetch all users with pagination
+    const allUsers: User[] = [];
+    let page = 1;
+    const limit = 100; // Large limit to minimize requests
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await privateApi.get('/user', {
+        params: { page, limit }
+      });
+
+      const users = response.data.data || response.data;
+      const total = response.data.total || users.length;
+
+      if (Array.isArray(users)) {
+        allUsers.push(...users);
+      }
+
+      // Check if there are more pages
+      const fetchedCount = page * limit;
+      hasMore = fetchedCount < total && users.length === limit;
+      page++;
+    }
+
+    // Filter sales users
+    const sales = allUsers.filter(
+      (user: User) => user.role === 'SALES'
+    );
+
+    return {
+      success: true,
+      data: sales,
     };
   },
 };

@@ -193,3 +193,11 @@ export function useTechnicians() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
+
+export function useSales() {
+  return useQuery({
+    queryKey: ['sales'],
+    queryFn: () => userApi.getSales(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}

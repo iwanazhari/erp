@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useLocations, useTechnicianAvailability, useTechnicians } from '../hooks/useSchedules';
 import MapPicker from '@/components/ui/MapPicker';
+import TimePicker24 from '@/components/ui/TimePicker24';
 import type { CreateScheduleInput, UpdateScheduleInput, Schedule, AvailabilityData, User } from '@/shared/types/schedule';
 import { calculateDuration } from '../utils/scheduleHelpers';
 
@@ -200,16 +201,10 @@ export default function ScheduleForm({
       {/* Time Inputs */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Waktu Mulai <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="time"
+          <TimePicker24
+            label="Waktu Mulai"
             value={formData.startTime}
-            onChange={(e) => handleChange('startTime', e.target.value)}
-            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.startTime ? 'border-red-500' : 'border-slate-300'
-            }`}
+            onChange={(time) => handleChange('startTime', time)}
           />
           {errors.startTime && (
             <p className="mt-1 text-sm text-red-500">{errors.startTime}</p>
@@ -217,16 +212,10 @@ export default function ScheduleForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Waktu Akhir <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="time"
+          <TimePicker24
+            label="Waktu Akhir"
             value={formData.endTime}
-            onChange={(e) => handleChange('endTime', e.target.value)}
-            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.endTime ? 'border-red-500' : 'border-slate-300'
-            }`}
+            onChange={(time) => handleChange('endTime', time)}
           />
           {errors.endTime && (
             <p className="mt-1 text-sm text-red-500">{errors.endTime}</p>

@@ -10,8 +10,10 @@ export const NAVIGATION: NavItem[] = [
   { label: "Dashboard", path: "/", roles: ["admin", "supervisor", "technician", "sales", "finance", "hr"] },
   { label: "Attendance", path: "/attendance", roles: ["admin", "supervisor", "technician", "sales", "finance", "hr"] },
   { label: "Leave", path: "/leave", roles: ["admin", "supervisor", "technician", "sales", "finance", "hr"] },
-  { 
-    label: "Schedule", 
+  { label: "Calendar", path: "/calendar", roles: ["admin", "supervisor", "technician", "sales", "finance", "hr"] },
+  { label: "Custom Holidays", path: "/custom-holidays", roles: ["admin", "supervisor", "hr"] },
+  {
+    label: "Schedule",
     path: "/schedule",
     roles: ["admin", "supervisor", "technician", "sales", "finance", "hr"],
     children: [

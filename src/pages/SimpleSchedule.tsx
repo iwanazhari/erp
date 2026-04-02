@@ -7,7 +7,7 @@ import {
   useUpdateSchedule,
   useCancelSchedule,
   useDeleteSchedule,
-  useTechnicians,
+  useSales,
 } from '@/features/schedule/hooks/useSchedules';
 import { locationApi } from '@/services/scheduleApi';
 import type { Schedule, CreateScheduleInput, UpdateScheduleInput } from '@/shared/types/schedule';
@@ -61,7 +61,7 @@ export default function SimpleSchedule() {
   });
 
   const { data: schedulesData, isLoading, refetch } = useSchedules({ page: 1, limit: 50 });
-  const { data: techniciansData } = useTechnicians();
+  const { data: salesData } = useSales();
 
   const createMutation = useCreateSchedule();
   const updateMutation = useUpdateSchedule();
@@ -69,7 +69,7 @@ export default function SimpleSchedule() {
   const deleteMutation = useDeleteSchedule();
 
   const schedules = schedulesData?.data || [];
-  const technicians = techniciansData?.data || [];
+  const sales = salesData?.data || [];
 
   const resetForm = () => {
     setFormData({
@@ -193,11 +193,11 @@ export default function SimpleSchedule() {
   };
 
   return (
-    <PageContainer title="Jadwal Teknisi">
+    <PageContainer title="Jadwal Sales">
       <div className="space-y-4">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <p className="text-slate-600">Kelola jadwal teknisi dengan mudah</p>
+          <p className="text-slate-600">Kelola jadwal sales dengan mudah</p>
           <button
             onClick={() => setShowForm(!showForm)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -215,16 +215,16 @@ export default function SimpleSchedule() {
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Teknisi</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Sales</label>
                   <select
                     value={formData.technicianId}
                     onChange={(e) => setFormData({ ...formData, technicianId: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   >
-                    <option value="">Pilih Teknisi</option>
-                    {technicians.map((tech: any) => (
-                      <option key={tech.id} value={tech.id}>{tech.name}</option>
+                    <option value="">Pilih Sales</option>
+                    {sales.map((s: any) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
                 </div>
@@ -370,7 +370,7 @@ export default function SimpleSchedule() {
           <table className="w-full">
             <thead className="bg-slate-50 border-b">
               <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Teknisi</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Sales</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Lokasi</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Tanggal & Waktu</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Status</th>
