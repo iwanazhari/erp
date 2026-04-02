@@ -10,9 +10,9 @@ WORKDIR /app
 # This layer is cached separately for faster rebuilds
 COPY package.json package-lock.json ./
 
-# Install dependencies (production only for smaller image)
+# Install ALL dependencies (including devDependencies for build)
 # Using npm ci for reproducible builds
-RUN npm ci --only=production && \
+RUN npm ci && \
     npm cache clean --force
 
 # Copy source code and config
