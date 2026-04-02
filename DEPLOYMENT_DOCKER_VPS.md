@@ -113,7 +113,7 @@ nano .env
 **Isi file `.env`:**
 ```env
 # API Configuration
-VITE_API_URL=http://worksy-backend:8080/api
+VITE_API_URL=http://15320/api
 
 # Geoapify API Key (optional)
 VITE_GEOAPIFY_API_KEY=your_geoapify_api_key
@@ -123,7 +123,7 @@ HOST_PORT=80
 ```
 
 **Penjelasan:**
-- `VITE_API_URL`: URL backend API (gunakan Docker service name `worksy-backend`)
+- `VITE_API_URL`: URL backend API (port 15320 sesuai backend Anda)
 - `VITE_GEOAPIFY_API_KEY`: API key untuk geocoding (optional)
 - `HOST_PORT`: Port yang akan di-expose (default: 80)
 
