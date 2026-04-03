@@ -17,7 +17,7 @@ export const NAVIGATION: NavItem[] = [
     path: "/schedule",
     roles: ["admin", "supervisor", "technician", "sales", "finance", "hr"],
     children: [
-      { label: "All Schedules", path: "/schedule", roles: ["admin", "supervisor", "hr"] },
+      { label: "Technician Schedule", path: "/schedule", roles: ["admin", "supervisor", "hr"] },
       { label: "My Schedule", path: "/schedule/my", roles: ["technician", "sales", "finance"] },
       { label: "Sales Schedule", path: "/schedule/sales", roles: ["admin", "supervisor", "sales", "hr"] },
     ]

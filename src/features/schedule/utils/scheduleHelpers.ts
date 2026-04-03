@@ -1,4 +1,62 @@
-import type { ScheduleStatus } from '@/shared/types/schedule';
+import type { Schedule, ScheduleKind, ScheduleStatus } from '@/shared/types/schedule';
+
+export function resolveScheduleKind(schedule: Schedule): ScheduleKind {
+  if (schedule.scheduleKind) return schedule.scheduleKind;
+  if (schedule.technicianId || schedule.technician) return 'TECHNICIAN';
+  return 'SALES';
+}
+
+/** Label utama baris jadwal: teknisi utama atau peserta sales (respons bisa campuran legacy + baru). */
+export function getScheduleAssigneeDisplay(schedule: Schedule): {
+  name: string;
+  email?: string;
+  kind: ScheduleKind;
+} {
+  const kind = resolveScheduleKind(schedule);
+  if (kind === 'SALES') {
+    const salesP =
+      schedule.participants?.find((p) => (p.role || p.user?.role || '').toUpperCase() === 'SALES') ??
+      schedule.participants?.[0];
+    const name =
+      salesP?.user?.name ??
+      (salesP as { name?: string })?.name ??
+      schedule.technician?.name ??
+      '—';
+    const email =
+      salesP?.user?.email ?? (salesP as { email?: string })?.email ?? schedule.technician?.email;
+    return { name, email, kind: 'SALES' };
+  }
+  const t = schedule.technician;
+  if (t) return { name: t.name, email: t.email, kind: 'TECHNICIAN' };
+  const techP = schedule.participants?.find((p) => (p.role || '').toUpperCase() === 'TECHNICIAN');
+  if (techP?.user) {
+    return { name: techP.user.name, email: techP.user.email, kind: 'TECHNICIAN' };
+  }
+  return { name: '—', kind };
+}
+
+export function scheduleKindBadgeClasses(kind: ScheduleKind): string {
+  return kind === 'TECHNICIAN'
+    ? 'bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200/80'
+    : 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80';
+}
+
+export function scheduleKindLabel(kind: ScheduleKind): string {
+  return kind === 'TECHNICIAN' ? 'Teknisi' : 'Sales';
+}
+
+export function getPrimaryTechnicianIdFromSchedule(schedule: Schedule): string {
+  if (schedule.technician?.id) return schedule.technician.id;
+  const techP = schedule.participants?.find((p) => (p.role || '').toUpperCase() === 'TECHNICIAN');
+  return techP?.user?.id ?? techP?.userId ?? '';
+}
+
+export function getPrimarySalesUserIdFromSchedule(schedule: Schedule): string {
+  const salesP = schedule.participants?.find(
+    (p) => (p.role || p.user?.role || '').toUpperCase() === 'SALES'
+  );
+  return salesP?.user?.id ?? salesP?.userId ?? schedule.technician?.id ?? '';
+}
 
 export function handleScheduleError(error: any): string {
   const errorCode = error.response?.data?.code;
@@ -77,13 +135,13 @@ export function getStatusColor(status: ScheduleStatus): string {
 
 export function getStatusBadgeClasses(status: ScheduleStatus): string {
   const config: Record<ScheduleStatus, string> = {
-    PENDING: 'bg-amber-50 text-amber-600',
-    ASSIGNED: 'bg-blue-50 text-blue-600',
-    IN_PROGRESS: 'bg-purple-50 text-purple-600',
-    COMPLETED: 'bg-emerald-50 text-emerald-600',
-    CANCELLED: 'bg-red-50 text-red-600',
+    PENDING: 'bg-amber-50 text-amber-800 ring-1 ring-amber-200/80',
+    ASSIGNED: 'bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200/80',
+    IN_PROGRESS: 'bg-indigo-100 text-indigo-900 ring-1 ring-indigo-200/80',
+    COMPLETED: 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80',
+    CANCELLED: 'bg-red-50 text-red-800 ring-1 ring-red-200/80',
   };
-  return config[status] || 'bg-slate-100 text-slate-600';
+  return config[status] || 'bg-slate-100 text-slate-700 ring-1 ring-slate-200/80';
 }
 
 export function formatScheduleTime(dateString: string): string {

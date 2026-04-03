@@ -1,4 +1,11 @@
-import { formatScheduleDate, formatScheduleTime, getStatusBadgeClasses } from '../utils/scheduleHelpers';
+import {
+  formatScheduleDate,
+  formatScheduleTime,
+  getScheduleAssigneeDisplay,
+  getStatusBadgeClasses,
+  scheduleKindBadgeClasses,
+  scheduleKindLabel,
+} from '../utils/scheduleHelpers';
 import EmptyState from '@/components/ui/EmptyState';
 import type { Schedule } from '@/shared/types/schedule';
 
@@ -35,7 +42,8 @@ export default function ScheduleTable({ schedules, onRowClick, isLoading }: Prop
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-slate-600">Teknisi</th>
+              <th className="px-4 py-3 text-left font-medium text-slate-600">Jenis</th>
+              <th className="px-4 py-3 text-left font-medium text-slate-600">Penugasan</th>
               <th className="px-4 py-3 text-left font-medium text-slate-600">Lokasi</th>
               <th className="px-4 py-3 text-left font-medium text-slate-600">Tanggal</th>
               <th className="px-4 py-3 text-left font-medium text-slate-600">Waktu</th>
@@ -43,16 +51,25 @@ export default function ScheduleTable({ schedules, onRowClick, isLoading }: Prop
             </tr>
           </thead>
           <tbody>
-            {schedules.map((schedule) => (
+            {schedules.map((schedule) => {
+              const assignee = getScheduleAssigneeDisplay(schedule);
+              return (
               <tr
                 key={schedule.id}
                 onClick={() => onRowClick(schedule)}
                 className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 <td className="px-4 py-4">
+                  <span
+                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${scheduleKindBadgeClasses(assignee.kind)}`}
+                  >
+                    {scheduleKindLabel(assignee.kind)}
+                  </span>
+                </td>
+                <td className="px-4 py-4">
                   <div>
-                    <p className="font-medium text-slate-800">{schedule.technician.name}</p>
-                    <p className="text-xs text-slate-500">{schedule.technician.email}</p>
+                    <p className="font-medium text-slate-800">{assignee.name}</p>
+                    <p className="text-xs text-slate-500">{assignee.email ?? '—'}</p>
                   </div>
                 </td>
                 <td className="px-4 py-4">
@@ -76,12 +93,15 @@ export default function ScheduleTable({ schedules, onRowClick, isLoading }: Prop
                   </div>
                 </td>
                 <td className="px-4 py-4">
-                  <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusBadgeClasses(schedule.status)}`}>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClasses(schedule.status)}`}
+                  >
                     {schedule.status}
                   </span>
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>

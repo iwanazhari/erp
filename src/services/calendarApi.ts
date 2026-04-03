@@ -269,9 +269,9 @@ export const customHolidayApi = {
       const customAsHolidays: Holiday[] = customHolidays.map(custom => ({
         date: custom.date.split('T')[0], // Ensure YYYY-MM-DD format
         name: custom.name,
-        nameId: custom.name_id || custom.nameId || custom.name,
+        nameId: custom.name_id ?? custom.name,
         description: custom.description,
-        descriptionId: custom.description_id || custom.descriptionId || custom.description,
+        descriptionId: custom.description_id ?? custom.description,
         type: 'Custom',
         isCustom: true,
         id: custom.id,

@@ -11,6 +11,7 @@ import {
 } from '@/features/schedule/hooks/useSchedules';
 import { locationApi } from '@/services/scheduleApi';
 import type { Schedule, CreateScheduleInput, UpdateScheduleInput } from '@/shared/types/schedule';
+import { getPrimarySalesUserIdFromSchedule, getScheduleAssigneeDisplay } from '@/features/schedule/utils/scheduleHelpers';
 import AddressAutocomplete from '@/components/ui/AddressAutocomplete';
 import TimePicker24 from '@/components/ui/TimePicker24';
 
@@ -60,7 +61,11 @@ export default function SimpleSchedule() {
     notes: '',
   });
 
-  const { data: schedulesData, isLoading, refetch } = useSchedules({ page: 1, limit: 50 });
+  const { data: schedulesData, isLoading, refetch } = useSchedules({
+    page: 1,
+    limit: 50,
+    scheduleKind: 'SALES',
+  });
   const { data: salesData } = useSales();
 
   const createMutation = useCreateSchedule();
@@ -91,7 +96,7 @@ export default function SimpleSchedule() {
   const handleEdit = (schedule: Schedule) => {
     setEditingId(schedule.id);
     setFormData({
-      technicianId: schedule.technician.id,
+      technicianId: getPrimarySalesUserIdFromSchedule(schedule),
       locationId: schedule.location.id,
       locationName: schedule.location.name,
       locationAddress: schedule.location.address,
@@ -136,7 +141,7 @@ export default function SimpleSchedule() {
 
       // Step 2: Create/Update schedule with locationId
       const payload: CreateScheduleInput | UpdateScheduleInput = {
-        technicianId: formData.technicianId!,
+        salesIds: [formData.technicianId!],
         locationId: locationId,
         date: new Date(formData.date!).toISOString(),
         startTime: new Date(`${formData.date}T${formData.startTime}`).toISOString(),
@@ -393,7 +398,7 @@ export default function SimpleSchedule() {
               ) : (
                 schedules.map((schedule: any) => (
                   <tr key={schedule.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-sm">{schedule.technician.name}</td>
+                    <td className="px-4 py-3 text-sm">{getScheduleAssigneeDisplay(schedule).name}</td>
                     <td className="px-4 py-3 text-sm">{schedule.location.name}</td>
                     <td className="px-4 py-3 text-sm">
                       <div>{new Date(schedule.date).toLocaleDateString('id-ID')}</div>

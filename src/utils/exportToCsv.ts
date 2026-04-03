@@ -1,11 +1,13 @@
 import type { Schedule } from '@/shared/types/schedule';
+import { getScheduleAssigneeDisplay, scheduleKindLabel } from '@/features/schedule/utils/scheduleHelpers';
 
 export function exportSchedulesToCSV(schedules: Schedule[], filename = 'schedules') {
   // Define CSV headers
   const headers = [
     'ID',
-    'Technician Name',
-    'Technician Email',
+    'Jenis jadwal',
+    'Nama penugasan',
+    'Email penugasan',
     'Location Name',
     'Location Address',
     'Date',
@@ -24,11 +26,13 @@ export function exportSchedulesToCSV(schedules: Schedule[], filename = 'schedule
       (new Date(schedule.endTime).getTime() - new Date(schedule.startTime).getTime()) /
         (1000 * 60)
     );
+    const assignee = getScheduleAssigneeDisplay(schedule);
 
     return [
       schedule.id,
-      `"${schedule.technician.name}"`,
-      `"${schedule.technician.email}"`,
+      `"${scheduleKindLabel(assignee.kind)}"`,
+      `"${assignee.name}"`,
+      `"${assignee.email ?? ''}"`,
       `"${schedule.location.name}"`,
       `"${schedule.location.address}"`,
       new Date(schedule.date).toLocaleDateString('id-ID'),

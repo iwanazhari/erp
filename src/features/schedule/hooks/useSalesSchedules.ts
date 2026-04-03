@@ -1,104 +1,93 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { salesScheduleApi } from '@/services/salesScheduleApi';
+import { scheduleApi } from '@/services/scheduleApi';
 import type { CreateScheduleInput, UpdateScheduleInput, ScheduleFilters } from '@/shared/types/schedule';
-import { useToast } from '@/components/ui/ToastContext';
+import { scheduleKeys } from './useSchedules';
 
-const QUERY_KEY = ['sales-schedules'];
+const QUERY_KEY = ['sales-schedules'] as const;
+
+function salesListFilters(filters?: ScheduleFilters): ScheduleFilters {
+  return { ...filters, scheduleKind: 'SALES' };
+}
 
 /**
- * Hook untuk fetch semua jadwal sales dengan pagination & filters
+ * Daftar jadwal sales — memakai GET `/api/schedules?scheduleKind=SALES` (bukan router sales terpisah).
  */
 export function useSalesSchedules(filters?: ScheduleFilters) {
+  const merged = salesListFilters(filters);
   return useQuery({
-    queryKey: [...QUERY_KEY, filters],
-    queryFn: () => salesScheduleApi.getAll(filters),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryKey: [...QUERY_KEY, merged],
+    queryFn: () => scheduleApi.getAll(merged),
+    staleTime: 5 * 60 * 1000,
     retry: 2,
   });
 }
 
-/**
- * Hook untuk fetch detail jadwal by ID
- */
 export function useSalesScheduleById(scheduleId: string) {
   return useQuery({
     queryKey: [...QUERY_KEY, 'detail', scheduleId],
-    queryFn: () => salesScheduleApi.getById(scheduleId),
+    queryFn: () => scheduleApi.getById(scheduleId),
     enabled: !!scheduleId,
     staleTime: 5 * 60 * 1000,
   });
 }
 
-/**
- * Hook untuk create jadwal baru
- */
 export function useCreateSalesSchedule() {
   const queryClient = useQueryClient();
-  const toast = useToast();
 
   return useMutation({
-    mutationFn: (data: CreateScheduleInput) => salesScheduleApi.create(data),
+    mutationFn: (data: CreateScheduleInput) => scheduleApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: scheduleKeys.all });
     },
   });
 }
 
-/**
- * Hook untuk update jadwal
- */
 export function useUpdateSalesSchedule() {
   const queryClient = useQueryClient();
-  const toast = useToast();
 
   return useMutation({
     mutationFn: ({ scheduleId, data }: { scheduleId: string; data: UpdateScheduleInput }) =>
-      salesScheduleApi.update(scheduleId, data),
+      scheduleApi.update(scheduleId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: scheduleKeys.all });
     },
   });
 }
 
-/**
- * Hook untuk cancel jadwal
- */
 export function useCancelSalesSchedule() {
   const queryClient = useQueryClient();
-  const toast = useToast();
 
   return useMutation({
-    mutationFn: ({ scheduleId, reason }: { scheduleId: string; reason?: string }) =>
-      salesScheduleApi.cancel(scheduleId, reason),
+    mutationFn: (scheduleId: string) => scheduleApi.cancel(scheduleId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: scheduleKeys.all });
     },
   });
 }
 
-/**
- * Hook untuk delete jadwal
- */
 export function useDeleteSalesSchedule() {
   const queryClient = useQueryClient();
-  const toast = useToast();
 
   return useMutation({
-    mutationFn: (scheduleId: string) => salesScheduleApi.delete(scheduleId),
+    mutationFn: (scheduleId: string) => scheduleApi.delete(scheduleId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: scheduleKeys.all });
     },
   });
 }
 
 /**
- * Hook untuk cek ketersediaan technician
+ * Ketersediaan teknisi — tetap endpoint utama `/schedules/availability/...`.
  */
 export function useCheckTechnicianAvailability(technicianId: string, date: string) {
   return useQuery({
     queryKey: [...QUERY_KEY, 'availability', technicianId, date],
-    queryFn: () => salesScheduleApi.checkAvailability(technicianId, date),
+    queryFn: () => scheduleApi.checkAvailability(technicianId, date),
     enabled: !!technicianId && !!date,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 2 * 60 * 1000,
   });
 }

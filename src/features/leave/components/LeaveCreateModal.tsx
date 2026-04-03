@@ -1,245 +1,284 @@
-import { useState, useEffect } from 'react';
-import type { LeaveStatus, LeaveApprovalStatus } from '@/shared/types/leave';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import type { CreateLeaveInput } from '@/shared/types/leave';
+import ModalShell from '@/components/ui/ModalShell';
+import FormField from '@/components/ui/FormField';
+import Button from '@/components/ui/Button';
+import { useLeaveTargetUsers } from '@/features/leave/hooks/useLeave';
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (data: {
-    userId: string;
-    status: LeaveStatus;
-    date: string;
-    leaveReason: string;
-    leaveFileUrl?: string;
-    leaveStatus?: LeaveApprovalStatus;
-  }) => Promise<void>;
+  onCreate: (data: CreateLeaveInput) => Promise<void>;
   isLoading?: boolean;
+  /** ADMIN/HR: boleh mengajukan untuk karyawan lain via `targetUserId` */
+  allowHrTarget?: boolean;
 };
 
-/**
- * Leave Create Modal Component
- *
- * Allows creating new leave request (ADMIN/MANAGER only)
- */
 export default function LeaveCreateModal({
   isOpen,
   onClose,
   onCreate,
   isLoading = false,
+  allowHrTarget = false,
 }: Props) {
-  // Form state
-  const [userId, setUserId] = useState('');
-  const [status, setStatus] = useState<LeaveStatus>('IZIN');
+  const [status, setStatus] = useState<CreateLeaveInput['status']>('IZIN');
   const [date, setDate] = useState('');
   const [leaveReason, setLeaveReason] = useState('');
   const [leaveFileUrl, setLeaveFileUrl] = useState('');
-  const [leaveStatus, setLeaveStatus] = useState<LeaveApprovalStatus>('PENDING');
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  // Reset form when modal opens/closes
+  /** HR/Admin: ajukan untuk diri sendiri atau karyawan lain */
+  const [hrMode, setHrMode] = useState<'self' | 'other'>('self');
+  const [targetUserId, setTargetUserId] = useState('');
+  const [targetSearch, setTargetSearch] = useState('');
+  const [targetListOpen, setTargetListOpen] = useState(false);
+  const targetBoxRef = useRef<HTMLDivElement>(null);
+
+  const { data: targetUsers = [], isLoading: loadingTargets } = useLeaveTargetUsers(
+    isOpen && allowHrTarget
+  );
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (targetBoxRef.current && !targetBoxRef.current.contains(e.target as Node)) {
+        setTargetListOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
-      setUserId('');
       setStatus('IZIN');
       setDate('');
       setLeaveReason('');
       setLeaveFileUrl('');
-      setLeaveStatus('PENDING');
+      setLocalError(null);
+      setHrMode('self');
+      setTargetUserId('');
+      setTargetSearch('');
+      setTargetListOpen(false);
     }
   }, [isOpen]);
 
+  const filteredTargets = useMemo(() => {
+    const q = targetSearch.trim().toLowerCase();
+    if (!q) return targetUsers;
+    return targetUsers.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q)
+    );
+  }, [targetUsers, targetSearch]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!userId.trim()) {
-      alert('User ID wajib diisi');
-      return;
-    }
-
+    setLocalError(null);
     if (!date) {
-      alert('Tanggal wajib diisi');
+      setLocalError('Tanggal wajib diisi.');
       return;
     }
-
     if (!leaveReason.trim()) {
-      alert('Alasan cuti wajib diisi');
+      setLocalError('Alasan wajib diisi.');
       return;
     }
+    if (allowHrTarget && hrMode === 'other') {
+      if (!targetUserId) {
+        setLocalError('Pilih karyawan yang diajukan izinnya.');
+        return;
+      }
+    }
 
-    await onCreate({
-      userId: userId.trim(),
+    const payload: CreateLeaveInput = {
+      date,
       status,
-      date: new Date(date).toISOString(),
       leaveReason: leaveReason.trim(),
-      leaveFileUrl: leaveFileUrl.trim() || undefined,
-      leaveStatus,
-    });
+    };
+    const url = leaveFileUrl.trim();
+    if (url) payload.leaveFileUrl = url;
+    if (allowHrTarget && hrMode === 'other' && targetUserId) {
+      payload.targetUserId = targetUserId;
+    }
+
+    await onCreate(payload);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 my-8 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Create Leave Request</h2>
-            <button
-              onClick={onClose}
-              className="text-white hover:text-gray-200 transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Ajukan izin atau sakit"
+      subtitle={
+        allowHrTarget
+          ? 'Satu tanggal per pengajuan. Default pemohon = akun login; HR/Admin dapat memilih karyawan lain (perusahaan sama).'
+          : 'Satu tanggal per pengajuan. Pemohon mengikuti akun yang sedang login.'
+      }
+      size="lg"
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isLoading}>
+            Batal
+          </Button>
+          <Button type="submit" form="leave-create-form" disabled={isLoading}>
+            {isLoading ? 'Mengirim…' : 'Kirim pengajuan'}
+          </Button>
+        </>
+      }
+    >
+      <form id="leave-create-form" onSubmit={handleSubmit} className="space-y-4">
+        {localError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {localError}
           </div>
-        </div>
+        )}
 
-        {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6">
-          {/* User ID */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              User ID <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              placeholder="Enter user UUID"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Masukkan User ID karyawan
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Leave Type */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipe Cuti <span className="text-red-500">*</span>
+        {allowHrTarget && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50/90 p-4">
+            <p className="mb-3 text-sm font-medium text-slate-800">Pemohon</p>
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-6">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="radio"
+                  name="leave-applicant"
+                  className="text-indigo-600 focus:ring-indigo-500"
+                  checked={hrMode === 'self'}
+                  onChange={() => {
+                    setHrMode('self');
+                    setTargetUserId('');
+                    setTargetSearch('');
+                    setTargetListOpen(false);
+                  }}
+                />
+                Saya sendiri (akun login)
               </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as LeaveStatus)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                required
-              >
-                <option value="IZIN">Izin</option>
-                <option value="SAKIT">Sakit</option>
-                <option value="ALPA">Alpa</option>
-              </select>
-            </div>
-
-            {/* Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tanggal <span className="text-red-500">*</span>
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="radio"
+                  name="leave-applicant"
+                  className="text-indigo-600 focus:ring-indigo-500"
+                  checked={hrMode === 'other'}
+                  onChange={() => {
+                    setHrMode('other');
+                    setTargetUserId('');
+                    setTargetSearch('');
+                    setTargetListOpen(true);
+                  }}
+                />
+                Karyawan lain
               </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                required
-              />
             </div>
-          </div>
-
-          {/* Approval Status */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status Approval
-            </label>
-            <select
-              value={leaveStatus}
-              onChange={(e) => setLeaveStatus(e.target.value as LeaveApprovalStatus)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            >
-              <option value="PENDING">Pending</option>
-              <option value="APPROVED">Approved</option>
-              <option value="REJECTED">Rejected</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Default: Pending
-            </p>
-          </div>
-
-          {/* Leave Reason */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Alasan Cuti <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={leaveReason}
-              onChange={(e) => setLeaveReason(e.target.value)}
-              placeholder="Jelaskan alasan pengajuan cuti..."
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
-              required
-            />
-          </div>
-
-          {/* Document URL */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              URL Dokumen Pendukung (Opsional)
-            </label>
-            <input
-              type="url"
-              value={leaveFileUrl}
-              onChange={(e) => setLeaveFileUrl(e.target.value)}
-              placeholder="https://minio.worksy.com/leave/document.jpg"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            />
-            {leaveFileUrl && (
-              <div className="mt-2">
-                <a
-                  href={leaveFileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  Preview Dokumen →
-                </a>
+            {hrMode === 'other' && (
+              <div ref={targetBoxRef} className="relative">
+                <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="leave-target-search">
+                  Cari karyawan
+                </label>
+                <input
+                  id="leave-target-search"
+                  type="search"
+                  autoComplete="off"
+                  placeholder={loadingTargets ? 'Memuat daftar…' : 'Nama atau email…'}
+                  value={targetSearch}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setTargetSearch(v);
+                    setTargetListOpen(true);
+                    if (targetUserId) setTargetUserId('');
+                  }}
+                  onFocus={() => setTargetListOpen(true)}
+                  disabled={loadingTargets}
+                  className="app-input"
+                  aria-autocomplete="list"
+                  aria-expanded={targetListOpen}
+                  aria-controls="leave-target-listbox"
+                />
+                {targetListOpen && !loadingTargets && (
+                  <ul
+                    id="leave-target-listbox"
+                    role="listbox"
+                    className="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+                  >
+                    {filteredTargets.length === 0 ? (
+                      <li className="px-3 py-2 text-sm text-slate-500">Tidak ada yang cocok</li>
+                    ) : (
+                      filteredTargets.map((u) => (
+                        <li key={u.id} role="option">
+                          <button
+                            type="button"
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-indigo-50"
+                            onMouseDown={(ev) => ev.preventDefault()}
+                            onClick={() => {
+                              setTargetUserId(u.id);
+                              setTargetSearch(`${u.name} · ${u.email}`);
+                              setTargetListOpen(false);
+                            }}
+                          >
+                            <span className="font-medium text-slate-900">{u.name}</span>
+                            <span className="block text-xs text-slate-500">{u.email}</span>
+                          </button>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                )}
+                <p className="mt-1 text-xs text-slate-500">
+                  Hanya Admin/HR yang dapat mengajukan untuk user lain; perusahaan harus sama dengan token Anda.
+                </p>
               </div>
             )}
           </div>
+        )}
 
-          {/* Actions */}
-          <div className="mt-6 flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <FormField label="Jenis" required id="leave-create-type">
+            <select
+              id="leave-create-type"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as CreateLeaveInput['status'])}
+              className="app-select"
+              required
             >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isLoading && (
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              )}
-              Create
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+              <option value="IZIN">Izin</option>
+              <option value="SAKIT">Sakit</option>
+            </select>
+          </FormField>
+          <FormField label="Tanggal" required id="leave-create-date">
+            <input
+              id="leave-create-date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="app-input"
+              required
+            />
+          </FormField>
+        </div>
+        <FormField label="Alasan" required id="leave-create-reason">
+          <textarea
+            id="leave-create-reason"
+            value={leaveReason}
+            onChange={(e) => setLeaveReason(e.target.value)}
+            placeholder="Jelaskan alasan pengajuan…"
+            rows={4}
+            className="app-input resize-none"
+            required
+          />
+        </FormField>
+        <FormField
+          label="URL lampiran"
+          id="leave-create-file"
+          hint="Opsional — tautan ke dokumen yang sudah diunggah ke storage."
+        >
+          <input
+            id="leave-create-file"
+            type="url"
+            value={leaveFileUrl}
+            onChange={(e) => setLeaveFileUrl(e.target.value)}
+            placeholder="https://…"
+            className="app-input"
+          />
+        </FormField>
+      </form>
+    </ModalShell>
   );
 }

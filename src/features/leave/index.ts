@@ -1,3 +1,10 @@
-// Leave Management Feature
+// Leave (izin) — integrasi GET/POST/PATCH /api/leave
 export { default as LeavePage } from './pages/LeavePage';
-export { useLeaves, useUpdateLeave, useDeleteLeave, useLeaveEditHistory } from './hooks/useLeave';
+export {
+  useLeaveList,
+  useLeaveTargetUsers,
+  useCreateLeave,
+  useApproveLeave,
+  useRejectLeave,
+  useLeaves,
+} from './hooks/useLeave';

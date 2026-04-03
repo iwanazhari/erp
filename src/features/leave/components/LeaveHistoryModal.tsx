@@ -1,4 +1,7 @@
 import type { LeaveEditHistoryData } from '@/shared/types/leave';
+import ModalShell from '@/components/ui/ModalShell';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 
 type Props = {
   history: LeaveEditHistoryData | null;
@@ -6,17 +9,7 @@ type Props = {
   onClose: () => void;
 };
 
-/**
- * Leave Edit History Modal Component
- *
- * Displays audit trail of leave request changes
- */
-export default function LeaveHistoryModal({
-  history,
-  isOpen,
-  onClose,
-}: Props) {
-  // Format datetime to Indonesian format
+export default function LeaveHistoryModal({ history, isOpen, onClose }: Props) {
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('id-ID', {
       year: 'numeric',
@@ -27,7 +20,6 @@ export default function LeaveHistoryModal({
     });
   };
 
-  // Format field name for display
   const formatFieldName = (field: string) => {
     const labels: Record<string, string> = {
       status: 'Tipe Cuti',
@@ -44,137 +36,80 @@ export default function LeaveHistoryModal({
   if (!isOpen || !history) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 my-8 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4">
-          <div className="flex items-center justify-between">
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Riwayat edit"
+      subtitle="Audit trail perubahan pengajuan izin"
+      size="xl"
+      footer={
+        <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={onClose}>
+          Tutup
+        </Button>
+      }
+    >
+      <div className="space-y-6">
+        <Card padding="sm" className="bg-slate-50/80">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold text-white">Edit History</h2>
-              <p className="text-sm text-purple-100 mt-1">
-                Audit trail perubahan leave request
-              </p>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Karyawan</p>
+              <p className="mt-1 font-semibold text-slate-900">{history.user.name}</p>
+              <p className="text-sm text-slate-600">{history.user.email}</p>
             </div>
-            <button
-              onClick={onClose}
-              className="text-white hover:text-gray-200 transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 max-h-[70vh] overflow-y-auto">
-          {/* Leave Info */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Karyawan</p>
-                <p className="text-base font-semibold text-gray-900">{history.user.name}</p>
-                <p className="text-sm text-gray-600">{history.user.email}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500 mb-1">Leave ID</p>
-                <p className="text-xs font-mono text-gray-700">{history.leaveId}</p>
-              </div>
+            <div className="text-right">
+              <p className="text-xs text-slate-500">ID</p>
+              <p className="font-mono text-xs text-slate-700">{history.leaveId}</p>
             </div>
           </div>
+        </Card>
 
-          {/* Current Edit Info */}
-          {history.currentEditInfo && (
-            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm font-semibold text-blue-900 mb-2">Edit Terakhir</p>
-              <div className="space-y-1 text-sm text-blue-800">
-                <p>Diedit oleh: <span className="font-medium">{history.currentEditInfo.editedBy}</span></p>
-                <p>Alasan: <span className="italic">{history.currentEditInfo.editReason}</span></p>
-              </div>
+        {history.currentEditInfo && (
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-950">
+            <p className="font-semibold text-indigo-900">Edit terakhir</p>
+            <p className="mt-1">
+              Oleh <span className="font-medium">{history.currentEditInfo.editedBy}</span>
+            </p>
+            <p className="mt-1 italic text-indigo-900/90">{history.currentEditInfo.editReason}</p>
+          </div>
+        )}
+
+        <div>
+          <h3 className="mb-3 text-base font-semibold text-slate-900">Riwayat perubahan</h3>
+          {history.editHistory.length === 0 ? (
+            <p className="py-6 text-center text-sm text-slate-500">Belum ada riwayat perubahan.</p>
+          ) : (
+            <div className="space-y-4">
+              {history.editHistory.map((edit, index) => (
+                <div key={index} className="relative border-l-2 border-indigo-200 pl-6">
+                  <div className="absolute -left-[9px] top-1 h-4 w-4 rounded-full border-2 border-white bg-indigo-600" />
+                  <Card padding="sm" className="bg-white">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-slate-900">{edit.editedBy.name}</span>
+                      <span className="text-xs text-slate-500">{formatDateTime(edit.editedAt)}</span>
+                    </div>
+                    <p className="text-xs text-slate-500">Role: {edit.editedBy.role}</p>
+                    <p className="mt-2 text-sm text-slate-700">
+                      <span className="font-medium">Alasan:</span> {edit.reason}
+                    </p>
+                    {Object.entries(edit.changes).map(([field, change]) => (
+                      <div key={field} className="mt-3 rounded-lg border border-slate-100 bg-slate-50/80 p-2 text-sm">
+                        <div className="font-medium text-slate-800">{formatFieldName(field)}</div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                          <span className="rounded bg-red-50 px-2 py-0.5 text-red-800">{String(change.old ?? '—')}</span>
+                          <span className="text-slate-400">→</span>
+                          <span className="rounded bg-emerald-50 px-2 py-0.5 text-emerald-800">
+                            {String(change.new ?? '—')}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </Card>
+                </div>
+              ))}
             </div>
           )}
-
-          {/* Edit History Timeline */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Riwayat Perubahan</h3>
-            
-            {history.editHistory.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p>Belum ada riwayat perubahan</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {history.editHistory.map((edit, index) => (
-                  <div key={index} className="relative pl-8 border-l-2 border-purple-300">
-                    {/* Timeline dot */}
-                    <div className="absolute -left-2 top-0 w-4 h-4 bg-purple-600 rounded-full border-2 border-white" />
-                    
-                    {/* Edit info */}
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-sm font-semibold text-gray-900">
-                          {edit.editedBy.name}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {formatDateTime(edit.editedAt)}
-                        </div>
-                      </div>
-                      
-                      <div className="text-xs text-gray-600 mb-2">
-                        <span className="font-medium">Role:</span> {edit.editedBy.role}
-                      </div>
-                      
-                      <div className="text-sm text-gray-700 mb-3">
-                        <span className="font-medium">Alasan:</span> {edit.reason}
-                      </div>
-                      
-                      {/* Changes */}
-                      {Object.entries(edit.changes).map(([field, change]) => (
-                        <div key={field} className="text-sm bg-white rounded p-2 mb-2 border border-gray-200">
-                          <div className="font-medium text-gray-700 mb-1">
-                            {formatFieldName(field)}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="text-red-600 bg-red-50 px-2 py-1 rounded">
-                              {change.old || '(none)'}
-                            </span>
-                            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                            </svg>
-                            <span className="text-green-600 bg-green-50 px-2 py-1 rounded">
-                              {change.new || '(none)'}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Tutup
-          </button>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }

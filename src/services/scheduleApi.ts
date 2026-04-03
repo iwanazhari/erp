@@ -51,37 +51,63 @@ export const locationApi = {
   },
 };
 
+/** Normalisasi role dari API (string atau bentuk nested) untuk filter peran. */
+function normalizeUserRoleUpper(user: { role?: unknown }): string {
+  const r = user.role;
+  if (typeof r === 'string') return r.trim().toUpperCase();
+  if (r && typeof r === 'object' && r !== null && 'name' in r) {
+    return String((r as { name: unknown }).name).trim().toUpperCase();
+  }
+  return '';
+}
+
+function userIsTechnicianRole(user: User): boolean {
+  const r = normalizeUserRoleUpper(user);
+  return r === 'TECHNICIAN' || r === 'TECHNICIAN_PAYMENT';
+}
+
+/** Hanya akun sales (bukan teknisi) — dipakai jadwal `scheduleKind: SALES`. */
+function userIsSalesRole(user: User): boolean {
+  const r = normalizeUserRoleUpper(user);
+  if (!r) return false;
+  if (r === 'SALES') return true;
+  if (r === 'SALES_REP' || r === 'SALES_EXECUTIVE' || r === 'SALES_MANAGER') return true;
+  return false;
+}
+
+async function fetchAllUsersPaged(): Promise<User[]> {
+  const allUsers: User[] = [];
+  let page = 1;
+  const limit = 100;
+  let hasMore = true;
+
+  while (hasMore) {
+    const response = await privateApi.get('/user', {
+      params: { page, limit },
+    });
+
+    const users = response.data.data || response.data;
+    const total = response.data.total || users.length;
+
+    if (Array.isArray(users)) {
+      allUsers.push(...users);
+    }
+
+    const fetchedCount = page * limit;
+    hasMore = fetchedCount < total && users.length === limit;
+    page++;
+  }
+
+  return allUsers;
+}
+
 // User API - Get technicians
 export const userApi = {
   getTechnicians: async (): Promise<ApiResponse<User[]>> => {
-    // Fetch all users with pagination
-    const allUsers: User[] = [];
-    let page = 1;
-    const limit = 100; // Large limit to minimize requests
-    let hasMore = true;
+    const allUsers = await fetchAllUsersPaged();
 
-    while (hasMore) {
-      const response = await privateApi.get('/user', {
-        params: { page, limit }
-      });
-
-      const users = response.data.data || response.data;
-      const total = response.data.total || users.length;
-
-      if (Array.isArray(users)) {
-        allUsers.push(...users);
-      }
-
-      // Check if there are more pages
-      const fetchedCount = page * limit;
-      hasMore = fetchedCount < total && users.length === limit;
-      page++;
-    }
-
-    // Filter technicians
-    const technicians = allUsers.filter(
-      (user: User) => user.role === 'TECHNICIAN' || user.role === 'TECHNICIAN_PAYMENT'
-    );
+    /** Hanya peran teknisi — terpisah dari pool sales (`getSales`). */
+    const technicians = allUsers.filter((user: User) => userIsTechnicianRole(user));
 
     return {
       success: true,
@@ -90,34 +116,10 @@ export const userApi = {
   },
 
   getSales: async (): Promise<ApiResponse<User[]>> => {
-    // Fetch all users with pagination
-    const allUsers: User[] = [];
-    let page = 1;
-    const limit = 100; // Large limit to minimize requests
-    let hasMore = true;
+    const allUsers = await fetchAllUsersPaged();
 
-    while (hasMore) {
-      const response = await privateApi.get('/user', {
-        params: { page, limit }
-      });
-
-      const users = response.data.data || response.data;
-      const total = response.data.total || users.length;
-
-      if (Array.isArray(users)) {
-        allUsers.push(...users);
-      }
-
-      // Check if there are more pages
-      const fetchedCount = page * limit;
-      hasMore = fetchedCount < total && users.length === limit;
-      page++;
-    }
-
-    // Filter sales users
-    const sales = allUsers.filter(
-      (user: User) => user.role === 'SALES'
-    );
+    /** Hanya peran sales — tidak mencampur teknisi (dipakai form jadwal sales + HR). */
+    const sales = allUsers.filter((user: User) => userIsSalesRole(user));
 
     return {
       success: true,
@@ -136,6 +138,7 @@ export const scheduleApi = {
   getAll: async (filters?: ScheduleFilters): Promise<ApiListResponse<Schedule>> => {
     const params = new URLSearchParams();
 
+    if (filters?.scheduleKind) params.append('scheduleKind', filters.scheduleKind);
     if (filters?.technicianId) params.append('technicianId', filters.technicianId);
     if (filters?.locationId) params.append('locationId', filters.locationId);
     if (filters?.status) params.append('status', filters.status);

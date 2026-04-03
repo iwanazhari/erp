@@ -3,6 +3,7 @@ import AttendanceViewMode from "@/components/ui/AttendanceViewMode";
 import AttendanceForm from "@/components/attendance/AttendanceForm";
 import AuditPanel from "@/components/ui/AuditPanel";
 import EmptyState from "@/components/ui/EmptyState";
+import Button from "@/components/ui/Button";
 import { useAuditLogs } from "@/modules/attendance/hooks";
 import { useUser } from "@/shared/UserContext";
 import type { Attendance } from "@/modules/attendance/types";
@@ -83,35 +84,37 @@ export default function AttendanceDrawer({
           {/* Tabs */}
           <div className="flex px-6 gap-4 border-b border-slate-200">
             <button
+              type="button"
               onClick={() => setActiveTab("detail")}
               className={`pb-3 text-sm font-medium transition relative ${
                 activeTab === "detail"
-                  ? "text-slate-900"
+                  ? "text-indigo-700"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
               Detail
               {activeTab === "detail" && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-900" />
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
               )}
             </button>
             {showAuditTab && (
               <button
+                type="button"
                 onClick={() => setActiveTab("audit")}
                 className={`pb-3 text-sm font-medium transition relative ${
                   activeTab === "audit"
-                    ? "text-slate-900"
+                    ? "text-indigo-700"
                     : "text-slate-500 hover:text-slate-700"
                 }`}
               >
                 Audit History
                 {auditLogs && auditLogs.length > 0 && (
-                  <span className="ml-2 text-xs bg-slate-200 px-2 py-0.5 rounded-full">
+                  <span className="ml-2 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">
                     {auditLogs.length}
                   </span>
                 )}
                 {activeTab === "audit" && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-900" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
                 )}
               </button>
             )}
@@ -129,12 +132,9 @@ export default function AttendanceDrawer({
                 </svg>
               }
               action={
-                <button
-                  onClick={onClose}
-                  className="mt-4 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition text-sm"
-                >
-                  Close
-                </button>
+                <Button type="button" variant="primary" className="mt-4" onClick={onClose}>
+                  Tutup
+                </Button>
               }
             />
           ) : selectedAttendance ? (
@@ -143,12 +143,9 @@ export default function AttendanceDrawer({
                 <>
                   <div className="flex justify-end mb-4">
                     {mode === "view" && canEdit && (
-                      <button
-                        onClick={onEdit}
-                        className="text-sm px-3 py-1 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition"
-                      >
+                      <Button type="button" size="sm" variant="primary" onClick={onEdit}>
                         Edit
-                      </button>
+                      </Button>
                     )}
                   </div>
 

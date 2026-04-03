@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { AttendanceRecord } from '@/shared/types/attendance';
+import { MAX_CLOCK_IN_CUTOFF_MINUTES, MAX_CLOCK_IN_DISPLAY } from '@/utils/attendanceCheckIn';
 
 type Props = {
   record: AttendanceRecord | null;
@@ -39,9 +40,6 @@ export default function AttendanceEditModal({
   const [calculatedStatus, setCalculatedStatus] = useState('');
   const [editReason, setEditReason] = useState('');
 
-  // Absolute maximum clock-in time (09:15 AM) - NEW RULE
-  const MAX_CLOCK_IN_TIME = '09:15';
-
   // Reset form when modal opens with new record
   useEffect(() => {
     if (record && isOpen) {
@@ -73,21 +71,19 @@ export default function AttendanceEditModal({
     }
 
     const [checkInHours, checkInMinutes] = checkInTime.split(':').map(Number);
-    const [maxHours, maxMinutes] = MAX_CLOCK_IN_TIME.split(':').map(Number);
-    
-    const checkInTotalMinutes = checkInHours * 60 + checkInMinutes;
-    const maxTimeMinutes = maxHours * 60 + maxMinutes; // 09:15 = 555 minutes
 
-    if (checkInTotalMinutes <= maxTimeMinutes) {
+    const checkInTotalMinutes = checkInHours * 60 + checkInMinutes;
+
+    if (checkInTotalMinutes <= MAX_CLOCK_IN_CUTOFF_MINUTES) {
       return {
         status: 'HADIR',
-        label: `HADIR (Tepat Waktu ≤ ${MAX_CLOCK_IN_TIME})`,
+        label: `HADIR (Tepat Waktu ≤ ${MAX_CLOCK_IN_DISPLAY})`,
         color: 'text-green-600 bg-green-50 border-green-200',
       };
     } else {
       return {
         status: 'TERLAMBAT',
-        label: `TERLAMBAT (Lewat ${MAX_CLOCK_IN_TIME})`,
+        label: `TERLAMBAT (Lewat ${MAX_CLOCK_IN_DISPLAY})`,
         color: 'text-yellow-600 bg-yellow-50 border-yellow-200',
       };
     }
@@ -172,10 +168,10 @@ export default function AttendanceEditModal({
                 <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-gray-700">Batas tepat waktu: <span className="font-bold text-red-600 text-base">{MAX_CLOCK_IN_TIME}</span></span>
+                <span className="text-gray-700">Batas tepat waktu: <span className="font-bold text-red-600 text-base">{MAX_CLOCK_IN_DISPLAY}</span></span>
               </div>
               <p className="text-xs text-gray-600 mt-2">
-                Aturan baru: Check-in ≤ {MAX_CLOCK_IN_TIME} = HADIR | Check-in &gt; {MAX_CLOCK_IN_TIME} = TERLAMBAT
+                Aturan baru: Check-in ≤ {MAX_CLOCK_IN_DISPLAY} = HADIR | Check-in &gt; {MAX_CLOCK_IN_DISPLAY} = TERLAMBAT
               </p>
             </div>
           </div>
@@ -193,7 +189,7 @@ export default function AttendanceEditModal({
               required
             />
             <p className="text-xs text-gray-500 mt-1">
-              Masuk ≤ <span className="font-semibold text-red-600">{MAX_CLOCK_IN_TIME}</span> = HADIR | Masuk &gt; <span className="font-semibold text-red-600">{MAX_CLOCK_IN_TIME}</span> = TERLAMBAT
+              Masuk ≤ <span className="font-semibold text-red-600">{MAX_CLOCK_IN_DISPLAY}</span> = HADIR | Masuk &gt; <span className="font-semibold text-red-600">{MAX_CLOCK_IN_DISPLAY}</span> = TERLAMBAT
             </p>
           </div>
 

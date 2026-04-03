@@ -22,22 +22,26 @@ export default function Topbar() {
   };
 
   return (
-    <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
-      <div className="flex items-center gap-4">
-        <span className="text-gray-700">Welcome</span>
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-sm sm:px-6">
+      <div className="min-w-0">
+        <p className="text-sm text-slate-500">Selamat datang kembali</p>
       </div>
 
       <div className="relative">
         <button
+          type="button"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors"
+          className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 pr-3 text-left shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
         >
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-800">
             {getInitials(user?.name || 'User')}
           </div>
-          <span className="text-sm font-medium text-gray-700">{user?.name}</span>
+          <div className="hidden min-w-0 sm:block">
+            <p className="truncate text-sm font-medium text-slate-800">{user?.name}</p>
+            <p className="truncate text-xs text-slate-500">{user?.role}</p>
+          </div>
           <svg
-            className={`w-4 h-4 text-gray-500 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
+            className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -48,21 +52,22 @@ export default function Topbar() {
 
         {isMenuOpen && (
           <>
-            <div
-              className="fixed inset-0 z-10"
-              onClick={() => setIsMenuOpen(false)}
-            />
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-              <div className="px-4 py-2 border-b border-gray-100">
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                <p className="text-xs text-gray-400 mt-1">{user?.role}</p>
+            <div className="fixed inset-0 z-10" aria-hidden onClick={() => setIsMenuOpen(false)} />
+            <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+              <div className="border-b border-slate-100 px-4 py-3 sm:hidden">
+                <p className="truncate text-sm font-medium text-slate-900">{user?.name}</p>
+                <p className="truncate text-xs text-slate-500">{user?.email}</p>
+              </div>
+              <div className="hidden border-b border-slate-100 px-4 py-3 sm:block">
+                <p className="truncate text-sm font-medium text-slate-900">{user?.name}</p>
+                <p className="truncate text-xs text-slate-500">{user?.email}</p>
               </div>
               <button
+                type="button"
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-red-700 transition hover:bg-red-50"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -70,7 +75,7 @@ export default function Topbar() {
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                   />
                 </svg>
-                Logout
+                Keluar
               </button>
             </div>
           </>

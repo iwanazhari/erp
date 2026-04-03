@@ -25,11 +25,22 @@ const privateApi = axios.create({
   },
 });
 
-// Add token to private API requests
+// Add token to private API requests (optional multi-tenant header from stored user)
 privateApi.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  try {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const u = JSON.parse(storedUser) as { companyId?: string };
+      if (u.companyId) {
+        config.headers['X-Company-ID'] = u.companyId;
+      }
+    }
+  } catch {
+    /* ignore invalid stored user */
   }
   return config;
 });

@@ -128,8 +128,8 @@ export default function AttendanceTable({
                 onClick={() => !isSaving && onRowClick(item)}
                 className={`border-b border-slate-100 transition-all duration-150 cursor-pointer group ${
                   selectedId === item.id
-                    ? "bg-blue-50 border-l-4 border-l-blue-500"
-                    : "hover:bg-slate-50 border-l-4 border-l-transparent"
+                    ? "border-l-4 border-l-indigo-600 bg-indigo-50/80"
+                    : "border-l-4 border-l-transparent hover:bg-slate-50"
                 } ${isSaving ? "opacity-50 pointer-events-none" : ""} ${
                   isOpened ? "ring-2 ring-indigo-500 ring-inset" : ""
                 }`}

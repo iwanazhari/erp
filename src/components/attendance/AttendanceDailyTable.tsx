@@ -1,4 +1,5 @@
 import type { AttendanceRecord } from '@/shared/types/attendance';
+import { isClockInLateFromIso } from '@/utils/attendanceCheckIn';
 
 type Props = {
   data: AttendanceRecord[];
@@ -169,9 +170,13 @@ export default function AttendanceDailyTable({
                     )}
                   </td>
                   
-                  {/* Jam Masuk - Green color */}
+                  {/* Jam Masuk — warna mengikuti aturan 09:15 (sama seperti modal edit) */}
                   <td className="px-6 py-4 text-center border-r border-gray-200">
-                    <span className="text-green-600 font-bold text-base">
+                    <span
+                      className={`font-bold text-base ${
+                        isClockInLateFromIso(record.clockIn) ? 'text-red-600' : 'text-green-600'
+                      }`}
+                    >
                       {formatTime(record.clockIn)}
                     </span>
                   </td>

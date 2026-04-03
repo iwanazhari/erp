@@ -24,6 +24,27 @@ const mockUsers: Record<Role, User> = {
     role: "technician",
     companyId: "company-1",
   },
+  sales: {
+    id: "user-sales",
+    name: "Sales User",
+    email: "sales@company.com",
+    role: "sales",
+    companyId: "company-1",
+  },
+  finance: {
+    id: "user-finance",
+    name: "Finance User",
+    email: "finance@company.com",
+    role: "finance",
+    companyId: "company-1",
+  },
+  hr: {
+    id: "user-hr",
+    name: "HR User",
+    email: "hr@company.com",
+    role: "hr",
+    companyId: "company-1",
+  },
 };
 
 /**

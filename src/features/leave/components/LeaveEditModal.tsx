@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import type { Leave, LeaveApprovalStatus, LeaveStatus } from '@/shared/types/leave';
+import ModalShell from '@/components/ui/ModalShell';
+import FormField from '@/components/ui/FormField';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 
 type Props = {
   leave: Leave | null;
@@ -16,12 +20,6 @@ type Props = {
   isLoading?: boolean;
 };
 
-/**
- * Leave Edit Modal Component
- *
- * Allows editing leave request data (ADMIN/MANAGER only)
- * All changes are logged in audit trail with edit reason
- */
 export default function LeaveEditModal({
   leave,
   isOpen,
@@ -29,42 +27,38 @@ export default function LeaveEditModal({
   onSave,
   isLoading = false,
 }: Props) {
-  // Form state
   const [status, setStatus] = useState<LeaveStatus>('IZIN');
   const [leaveReason, setLeaveReason] = useState('');
   const [leaveFileUrl, setLeaveFileUrl] = useState('');
   const [leaveStatus, setLeaveStatus] = useState<LeaveApprovalStatus>('PENDING');
   const [date, setDate] = useState('');
   const [editReason, setEditReason] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  // Reset form when modal opens with new leave
   useEffect(() => {
     if (leave && isOpen) {
-      setStatus(leave.status);
+      const st = leave.status;
+      setStatus(st === 'IZIN' || st === 'SAKIT' || st === 'ALPA' ? st : 'IZIN');
       setLeaveReason(leave.leaveReason);
-      setLeaveFileUrl(leave.leaveFileUrl);
+      setLeaveFileUrl(leave.leaveFileUrl ?? '');
       setLeaveStatus(leave.leaveStatus);
-      
-      // Extract date from ISO string
       const leaveDate = new Date(leave.date);
       const year = leaveDate.getFullYear();
       const month = (leaveDate.getMonth() + 1).toString().padStart(2, '0');
       const day = leaveDate.getDate().toString().padStart(2, '0');
       setDate(`${year}-${month}-${day}`);
-      
-      // Reset edit reason
       setEditReason('');
+      setLocalError(null);
     }
   }, [leave, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setLocalError(null);
     if (!editReason.trim()) {
-      alert('Alasan edit wajib diisi untuk audit trail');
+      setLocalError('Alasan edit wajib diisi untuk jejak audit.');
       return;
     }
-
     await onSave({
       status,
       leaveReason,
@@ -78,182 +72,127 @@ export default function LeaveEditModal({
   if (!isOpen || !leave) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
-        onClick={onClose}
-      />
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit pengajuan izin"
+      subtitle="Perubahan sebaiknya dicatat dengan alasan yang jelas."
+      size="xl"
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isLoading}>
+            Batal
+          </Button>
+          <Button type="submit" form="leave-edit-form" disabled={isLoading}>
+            {isLoading ? 'Menyimpan…' : 'Simpan'}
+          </Button>
+        </>
+      }
+    >
+      <form id="leave-edit-form" onSubmit={handleSubmit} className="space-y-4">
+        {localError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{localError}</div>
+        )}
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 my-8 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Edit Leave Request</h2>
-            <button
-              onClick={onClose}
-              className="text-white hover:text-gray-200 transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6">
-          {/* Employee Info */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-500 mb-1">Karyawan</p>
-            <p className="text-base font-semibold text-gray-900">{leave.user.name}</p>
-            <p className="text-sm text-gray-600">{leave.user.email}</p>
-            <div className="mt-2 flex gap-4">
-              <p className="text-sm text-gray-500">
-                Tipe: <span className="font-medium text-gray-900">{leave.status}</span>
-              </p>
-              <p className="text-sm text-gray-500">
-                Tanggal: <span className="font-medium text-gray-900">{new Date(leave.date).toLocaleDateString('id-ID', {
+        <Card padding="sm" className="bg-slate-50/80">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Karyawan</p>
+          <p className="mt-1 font-semibold text-slate-900">{leave.user.name}</p>
+          <p className="text-sm text-slate-600">{leave.user.email}</p>
+          <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-600">
+            <span>
+              Tipe: <span className="font-medium text-slate-900">{leave.status}</span>
+            </span>
+            <span>
+              Tanggal asli:{' '}
+              <span className="font-medium text-slate-900">
+                {new Date(leave.date).toLocaleDateString('id-ID', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
-                })}</span>
-              </p>
-            </div>
+                })}
+              </span>
+            </span>
           </div>
+        </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Leave Type */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipe Cuti
-              </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as LeaveStatus)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              >
-                <option value="IZIN">Izin</option>
-                <option value="SAKIT">Sakit</option>
-                <option value="ALPA">Alpa</option>
-              </select>
-            </div>
-
-            {/* Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tanggal
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              />
-            </div>
-          </div>
-
-          {/* Approval Status */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status Approval
-            </label>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <FormField label="Tipe cuti" id="leave-edit-type">
             <select
-              value={leaveStatus}
-              onChange={(e) => setLeaveStatus(e.target.value as LeaveApprovalStatus)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              id="leave-edit-type"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as LeaveStatus)}
+              className="app-select"
             >
-              <option value="PENDING">Pending</option>
-              <option value="APPROVED">Approved</option>
-              <option value="REJECTED">Rejected</option>
+              <option value="IZIN">Izin</option>
+              <option value="SAKIT">Sakit</option>
+              <option value="ALPA">Alpa</option>
             </select>
-          </div>
-
-          {/* Leave Reason */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Alasan Cuti
-            </label>
-            <textarea
-              value={leaveReason}
-              onChange={(e) => setLeaveReason(e.target.value)}
-              rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
-            />
-          </div>
-
-          {/* Document URL */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              URL Dokumen Pendukung
-            </label>
+          </FormField>
+          <FormField label="Tanggal" id="leave-edit-date">
             <input
-              type="url"
-              value={leaveFileUrl}
-              onChange={(e) => setLeaveFileUrl(e.target.value)}
-              placeholder="https://minio.worksy.com/leave/document.jpg"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              id="leave-edit-date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="app-input"
             />
-            {leaveFileUrl && (
-              <div className="mt-2">
-                <a
-                  href={leaveFileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  Preview Dokumen →
-                </a>
-              </div>
-            )}
-          </div>
+          </FormField>
+        </div>
 
-          {/* Edit Reason - Required for audit trail */}
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Alasan Edit <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={editReason}
-              onChange={(e) => setEditReason(e.target.value)}
-              placeholder="Contoh: Approve leave request, Update status per HR request, Koreksi data, dll."
-              rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Alasan edit akan dicatat dalam audit trail untuk tracking
+        <FormField label="Keputusan" id="leave-edit-approval">
+          <select
+            id="leave-edit-approval"
+            value={leaveStatus}
+            onChange={(e) => setLeaveStatus(e.target.value as LeaveApprovalStatus)}
+            className="app-select"
+          >
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Disetujui</option>
+            <option value="REJECTED">Ditolak</option>
+          </select>
+        </FormField>
+
+        <FormField label="Alasan cuti" id="leave-edit-reason">
+          <textarea
+            id="leave-edit-reason"
+            value={leaveReason}
+            onChange={(e) => setLeaveReason(e.target.value)}
+            rows={3}
+            className="app-input resize-none"
+          />
+        </FormField>
+
+        <FormField label="URL dokumen pendukung" id="leave-edit-file">
+          <input
+            id="leave-edit-file"
+            type="url"
+            value={leaveFileUrl}
+            onChange={(e) => setLeaveFileUrl(e.target.value)}
+            placeholder="https://…"
+            className="app-input"
+          />
+          {leaveFileUrl ? (
+            <p className="mt-2">
+              <a href={leaveFileUrl} target="_blank" rel="noopener noreferrer" className="app-link text-sm">
+                Buka lampiran
+              </a>
             </p>
-          </div>
+          ) : null}
+        </FormField>
 
-          {/* Actions */}
-          <div className="mt-6 flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isLoading && (
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              )}
-              Simpan
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <FormField label="Alasan edit" required id="leave-edit-why" hint="Wajib untuk jejak audit.">
+          <textarea
+            id="leave-edit-why"
+            value={editReason}
+            onChange={(e) => setEditReason(e.target.value)}
+            placeholder="Mis. koreksi data sesuai permintaan HR"
+            rows={3}
+            className="app-input resize-none"
+            required
+          />
+        </FormField>
+      </form>
+    </ModalShell>
   );
 }

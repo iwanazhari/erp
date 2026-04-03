@@ -1,86 +1,126 @@
+import axios from 'axios';
 import { privateApi } from './authApi';
-import type {
-  Leave,
-  LeaveData,
-  LeaveFilters,
-  LeaveEditHistoryData,
-  UpdateLeaveData,
-  ApiResponse,
-} from '@/shared/types/leave';
+import type { CreateLeaveInput, Leave, ApiResponse } from '@/shared/types/leave';
+
+export type LeaveTargetUser = { id: string; name: string; email: string };
+
+/** GET /user — dipakai untuk memilih pemohon saat HR/Admin mengajukan untuk karyawan lain */
+async function fetchAllUsersForLeaveTarget(): Promise<LeaveTargetUser[]> {
+  const all: LeaveTargetUser[] = [];
+  let page = 1;
+  const limit = 100;
+  let hasMore = true;
+
+  while (hasMore) {
+    const response = await privateApi.get('/user', { params: { page, limit } });
+    const raw = response.data as {
+      data?: unknown[];
+      total?: number;
+    };
+    const users = Array.isArray(raw.data)
+      ? raw.data
+      : Array.isArray(response.data)
+        ? (response.data as unknown[])
+        : [];
+    const total = typeof raw.total === 'number' ? raw.total : users.length;
+
+    for (const u of users as Array<{ id: string; name: string; email: string }>) {
+      if (u?.id && u?.name) {
+        all.push({ id: u.id, name: u.name, email: u.email ?? '' });
+      }
+    }
+
+    const fetchedCount = page * limit;
+    hasMore = fetchedCount < total && users.length === limit;
+    page += 1;
+  }
+
+  return all;
+}
+
+function apiErrorMessage(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    const msg = err.response?.data?.message;
+    if (typeof msg === 'string' && msg.trim()) return msg;
+    if (err.response?.status === 403) return 'Akses ditolak. Anda tidak memiliki izin.';
+    if (err.response?.status === 409) return 'Sudah ada data absensi untuk tanggal tersebut.';
+    if (err.response?.status === 400) return 'Data tidak valid. Periksa kembali formulir.';
+  }
+  if (err instanceof Error) return err.message;
+  return 'Terjadi kesalahan';
+}
+
+export { apiErrorMessage as leaveApiErrorMessage };
 
 /**
- * Leave Management API Service
+ * Leave API — sesuai dokumentasi backend (baris Attendance + leaveStatus).
  *
- * Handles all leave-related API calls
- *
- * Endpoints:
- * - GET /api/leave - Get all leave requests
- * - GET /api/leave/:id/edit-history - Get edit history
- * - PUT /api/leave/:id - Update leave request
- * - DELETE /api/leave/:id - Delete leave request
+ * - GET /api/leave — daftar (scope oleh role di server)
+ * - POST /api/leave — ajukan izin (sendiri atau ADMIN/HR dengan targetUserId)
+ * - PATCH /api/leave/:id/approve — ADMIN, HR
+ * - PATCH /api/leave/:id/reject — ADMIN, HR
  */
 export const leaveApi = {
   /**
-   * Get all leave requests with filters and pagination
-   * Endpoint: GET /api/leave
-   *
-   * @param filters - Query parameters (page, pageSize, status, type, userId, startDate, endDate)
-   * @returns ApiResponse<LeaveData>
+   * Daftar pengajuan izin (array Attendance dengan relasi user ringkas).
    */
-  getAll: async (filters?: LeaveFilters): Promise<ApiResponse<LeaveData>> => {
-    const params = new URLSearchParams();
-
-    if (filters?.page) params.append('page', String(filters.page));
-    if (filters?.pageSize) params.append('pageSize', String(filters.pageSize));
-    if (filters?.status) params.append('status', filters.status);
-    if (filters?.type) params.append('type', filters.type);
-    if (filters?.userId) params.append('userId', filters.userId);
-    if (filters?.startDate) params.append('startDate', filters.startDate);
-    if (filters?.endDate) params.append('endDate', filters.endDate);
-
-    const response = await privateApi.get<ApiResponse<LeaveData>>(`/leave?${params}`);
-    return response.data;
+  getList: async (): Promise<Leave[]> => {
+    const response = await privateApi.get<ApiResponse<Leave[]>>('/leave');
+    const body = response.data;
+    if (!body.success) {
+      throw new Error(body.message || 'Gagal mengambil daftar izin');
+    }
+    const raw = body.data;
+    return Array.isArray(raw) ? raw : [];
   },
 
-  /**
-   * Get leave edit history (audit trail)
-   * Endpoint: GET /api/leave/:id/edit-history
-   *
-   * @param leaveId - Leave ID (UUID)
-   * @returns ApiResponse<LeaveEditHistoryData>
-   */
-  getEditHistory: async (leaveId: string): Promise<ApiResponse<LeaveEditHistoryData>> => {
-    const response = await privateApi.get<ApiResponse<LeaveEditHistoryData>>(
-      `/leave/${leaveId}/edit-history`
-    );
-    return response.data;
-  },
+  /** Daftar user (perusahaan) untuk dropdown HR/Admin — pemohon alternatif */
+  getUsersForLeaveTarget: (): Promise<LeaveTargetUser[]> => fetchAllUsersForLeaveTarget(),
 
   /**
-   * Update leave request (ADMIN/MANAGER only)
-   * Endpoint: PUT /api/leave/:id
-   *
-   * @param leaveId - Leave ID (UUID)
-   * @param updateData - Update data (editReason is required)
-   * @returns ApiResponse<Leave>
+   * Mengajukan izin untuk satu tanggal.
+   * Tanpa targetUserId: pemohon = user dari token.
+   * Dengan targetUserId (ADMIN/HR): pemohon = karyawan tersebut.
    */
-  update: async (leaveId: string, updateData: UpdateLeaveData): Promise<ApiResponse<Leave>> => {
-    const response = await privateApi.put<ApiResponse<Leave>>(`/leave/${leaveId}`, updateData);
-    return response.data;
+  create: async (input: CreateLeaveInput): Promise<Leave> => {
+    const body: Record<string, unknown> = {
+      date: input.date,
+      status: input.status,
+      leaveReason: input.leaveReason,
+    };
+    if (input.leaveFileUrl != null && input.leaveFileUrl !== '') {
+      body.leaveFileUrl = input.leaveFileUrl;
+    }
+    if (input.targetUserId?.trim()) {
+      body.targetUserId = input.targetUserId.trim();
+    } else if (input.userId?.trim()) {
+      body.userId = input.userId.trim();
+    }
+
+    const response = await privateApi.post<ApiResponse<Leave>>('/leave', body);
+    const resBody = response.data;
+    if (!resBody.success) {
+      throw new Error(resBody.message || 'Gagal mengajukan izin');
+    }
+    return resBody.data;
   },
 
-  /**
-   * Delete leave request (ADMIN only)
-   * Endpoint: DELETE /api/leave/:id
-   *
-   * @param leaveId - Leave ID (UUID)
-   * @returns ApiResponse<{ id: string; deleted: boolean }>
-   */
-  delete: async (leaveId: string): Promise<ApiResponse<{ id: string; deleted: boolean }>> => {
-    const response = await privateApi.delete<ApiResponse<{ id: string; deleted: boolean }>>(
-      `/leave/${leaveId}`
-    );
-    return response.data;
+  approve: async (id: string): Promise<Leave> => {
+    const response = await privateApi.patch<ApiResponse<Leave>>(`/leave/${id}/approve`, {});
+    const body = response.data;
+    if (!body.success) {
+      throw new Error(body.message || 'Gagal menyetujui izin');
+    }
+    return body.data;
+  },
+
+  reject: async (id: string): Promise<Leave> => {
+    const response = await privateApi.patch<ApiResponse<Leave>>(`/leave/${id}/reject`, {});
+    const body = response.data;
+    if (!body.success) {
+      throw new Error(body.message || 'Gagal menolak izin');
+    }
+    return body.data;
   },
 };
 

@@ -1,0 +1,34 @@
+---
+description: Prinsip wajib — kualitas produksi, kejujuran teknis, keamanan, dan edit minimal.
+alwaysApply: true
+---
+
+# Production mandatory principles (wajib)
+
+## Core principles
+
+1. **Truth over agreement** — Tolak kode buruk dengan argumen teknis; jangan setuju jika melanggar praktik terbaik.
+2. **Zero hallucination** — Akui ketidakpastian; jangan memalsukan fakta, sintaks, atau dokumentasi.
+3. **Production-proof first** — Kode siap produksi; **environment parity** (perilaku Dev sejajar Prod).
+
+## Working principles
+
+4. **Validation before execution** — Validasi terhadap Clean Code, pola desain, dan keamanan sebelum merespons atau mengimplementasi.
+5. **Strict editing policy** — Jangan edit/hapus kode kecuali **dampaknya jelas**; edit **minimal** dan terarah.
+6. **Clean code & modular architecture** — SOLID, DRY, KISS; penamaan deskriptif; modularitas pertama.
+
+## Output & code expectations
+
+7. **Risiko & dampak dulu** — Jelaskan risiko dan dampak sebelum solusi; kemudian tawarkan solusi sesuai praktik terbaik.
+8. **Tanpa placeholder** — Tidak ada stub kosong untuk alur produksi; bagian kritis produksi diberi komentar yang bermakna.
+9. **Security & stability over speed** — Keamanan dan stabilitas diutamakan dibanding kecepatan pengiriman.
+
+## Technical standards
+
+- **Modularity first** — Arsitektur modular, perluasan tanpa duplikasi besar.
+- **Best practices** — SOLID, DRY, secure coding (validasi input, rahasia tidak di repo, least privilege bila relevan).
+- **Conservative editing** — Jangan mengubah kode yang sudah benar; ubah hanya yang **perlu** untuk tugas.
+
+## Agent behavior
+
+- Setelah mengikuti aturan ini, tetap patuh pada instruksi pengguna dan konteks proyek; jika konflik, utamakan keamanan dan kejelasan dampak.

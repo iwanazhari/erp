@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Location, CreateLocationInput, UpdateLocationInput } from '@/shared/types/schedule';
+import Button from '@/components/ui/Button';
 
 type Props = {
   initialData?: Location;
@@ -98,7 +99,7 @@ export default function LocationForm({
           type="text"
           value={formData.name}
           onChange={(e) => handleChange('name', e.target.value)}
-          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
             errors.name ? 'border-red-500' : 'border-slate-300'
           }`}
           placeholder="Contoh: Kantor Cabang Jakarta"
@@ -115,7 +116,7 @@ export default function LocationForm({
           value={formData.address}
           onChange={(e) => handleChange('address', e.target.value)}
           rows={3}
-          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
+          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none ${
             errors.address ? 'border-red-500' : 'border-slate-300'
           }`}
           placeholder="Alamat lengkap lokasi"
@@ -134,7 +135,7 @@ export default function LocationForm({
             step="any"
             value={formData.latitude}
             onChange={(e) => handleChange('latitude', e.target.value)}
-            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
               errors.latitude ? 'border-red-500' : 'border-slate-300'
             }`}
             placeholder="-6.2088"
@@ -151,7 +152,7 @@ export default function LocationForm({
             step="any"
             value={formData.longitude}
             onChange={(e) => handleChange('longitude', e.target.value)}
-            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
               errors.longitude ? 'border-red-500' : 'border-slate-300'
             }`}
             placeholder="106.8456"
@@ -171,7 +172,7 @@ export default function LocationForm({
           onChange={(e) => handleChange('radius', e.target.value)}
           min={10}
           max={1000}
-          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
             errors.radius ? 'border-red-500' : 'border-slate-300'
           }`}
           placeholder="50"
@@ -190,7 +191,7 @@ export default function LocationForm({
           onChange={(e) => handleChange('description', e.target.value)}
           rows={3}
           maxLength={1000}
-          className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
           placeholder="Deskripsi lokasi (opsional)"
         />
         <p className="text-xs text-slate-500 mt-1">
@@ -205,7 +206,7 @@ export default function LocationForm({
           id="isActive"
           checked={formData.isActive}
           onChange={(e) => handleChange('isActive', e.target.checked)}
-          className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+          className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
         />
         <label htmlFor="isActive" className="text-sm text-slate-700">
           Lokasi Aktif
@@ -213,21 +214,13 @@ export default function LocationForm({
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-6 py-2.5 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-        >
+      <div className="flex justify-end gap-3 border-t pt-4">
+        <Button type="button" variant="secondary" onClick={onCancel}>
           Batal
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-6 py-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSubmitting ? 'Menyimpan...' : initialData ? 'Perbarui' : 'Buat Lokasi'}
-        </button>
+        </Button>
+        <Button type="submit" variant="primary" disabled={isSubmitting}>
+          {isSubmitting ? 'Menyimpan...' : initialData ? 'Perbarui' : 'Buat lokasi'}
+        </Button>
       </div>
     </form>
   );

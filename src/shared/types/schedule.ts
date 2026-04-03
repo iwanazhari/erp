@@ -45,9 +45,22 @@ export interface Technician {
 
 export type ScheduleStatus = 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
+/** Satu jadwal hanya salah satu: teknisi lapangan atau sales (backend). */
+export type ScheduleKind = 'TECHNICIAN' | 'SALES';
+
+export interface ScheduleParticipant {
+  userId?: string;
+  role?: string;
+  user?: Pick<Technician, 'id' | 'name' | 'email'> & { role?: string };
+}
+
 export interface Schedule {
   id: string;
-  technician: Technician;
+  scheduleKind?: ScheduleKind;
+  /** Untuk jadwal SALES biasanya `null` (legacy/API lama bisa masih mengisi). */
+  technicianId?: string | null;
+  technician?: Technician | null;
+  participants?: ScheduleParticipant[];
   location: Location;
   date: string;
   startTime: string;
@@ -84,8 +97,15 @@ export interface UpdateLocationInput {
   isActive?: boolean;
 }
 
+/**
+ * Create: **salah satu** kelompok assignee (XOR):
+ * - `technicianId` atau `technicianIds` (tanpa `salesIds`), atau
+ * - `salesIds` minimal satu (tanpa `technicianId` / `technicianIds`).
+ */
 export interface CreateScheduleInput {
-  technicianId: string;
+  technicianId?: string;
+  technicianIds?: string[];
+  salesIds?: string[];
   locationId?: string;
   locationName?: string;
   locationAddress?: string;
@@ -103,6 +123,8 @@ export interface CreateScheduleInput {
 
 export interface UpdateScheduleInput {
   technicianId?: string;
+  technicianIds?: string[];
+  salesIds?: string[];
   locationId?: string;
   locationName?: string;
   locationAddress?: string;
@@ -176,6 +198,8 @@ export interface BulkScheduleResult {
 }
 
 export interface ScheduleFilters {
+  /** Filter daftar: hanya jadwal teknisi atau hanya jadwal sales */
+  scheduleKind?: ScheduleKind;
   technicianId?: string;
   locationId?: string;
   status?: ScheduleStatus;

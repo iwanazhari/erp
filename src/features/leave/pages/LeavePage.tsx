@@ -1,47 +1,99 @@
-import { useState, useCallback } from 'react';
-import { useLeaves, useUpdateLeave, useDeleteLeave } from '@/features/leave/hooks/useLeave';
+import { useState, useCallback, useMemo } from 'react';
 import {
-  LeaveTable,
-  LeaveFilters,
-  LeaveEditModal,
-  LeaveHistoryModal,
-} from '@/features/leave/components';
-import type { Leave, LeaveFilters as LeaveFiltersType, LeaveStatus, LeaveApprovalStatus } from '@/shared/types/leave';
+  useLeaveList,
+  useCreateLeave,
+  useApproveLeave,
+  useRejectLeave,
+  useLeaveTargetUsers,
+} from '@/features/leave/hooks/useLeave';
+import { LeaveTable, LeaveFilters, LeaveCreateModal } from '@/features/leave/components';
+import type { CreateLeaveInput, Leave, LeaveFilters as LeaveFiltersType } from '@/shared/types/leave';
+import { useAuth } from '@/shared/AuthContext';
+import { useToast } from '@/components/ui/ToastContext';
+import { useConfirm } from '@/components/ui/ConfirmDialogContext';
+import { leaveApiErrorMessage } from '@/services/leaveApi';
+import PageContainer from '@/components/ui/PageContainer';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import ModalShell from '@/components/ui/ModalShell';
+import LeaveStatusBadge from '@/components/ui/LeaveStatusBadge';
 
 const DEFAULT_PAGE_SIZE = 20;
 
-/**
- * Leave Management Page Component
- *
- * Displays all leave requests with filters and actions.
- * Admin/Manager only - can view, edit, approve/reject, and delete leave requests.
- *
- * Features:
- * - View all leave requests
- * - Filter by type, status, date range
- * - Edit leave request (with audit trail)
- * - Approve/Reject leave requests
- * - Delete leave requests (Admin only)
- * - View edit history
- */
+function toDateKey(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function canApproveRejectLeave(role: string | undefined): boolean {
+  const r = String(role ?? '').toUpperCase();
+  return r === 'ADMIN' || r === 'HR';
+}
+
 export default function LeavePage() {
+  const { user } = useAuth();
+  const toast = useToast();
+  const { confirm } = useConfirm();
+
   const [filters, setFilters] = useState<LeaveFiltersType>({
     page: 1,
     pageSize: DEFAULT_PAGE_SIZE,
   });
-  
-  const [selectedLeave, setSelectedLeave] = useState<Leave | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [detailLeave, setDetailLeave] = useState<Leave | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const {
-    data,
-    isLoading,
-    error,
-  } = useLeaves(filters);
+  const { data: leaves = [], isLoading, error } = useLeaveList();
+  const createLeave = useCreateLeave();
+  const approveLeave = useApproveLeave();
+  const rejectLeave = useRejectLeave();
 
-  const updateLeave = useUpdateLeave();
-  const deleteLeave = useDeleteLeave();
+  const canHrAdmin = canApproveRejectLeave(typeof user?.role === 'string' ? user.role : undefined);
+
+  // Untuk tampilan `approvedBy` (backend mengirim UUID; UI ingin menampilkan user.name)
+  const { data: targetUsers = [] } = useLeaveTargetUsers(!!detailLeave && canHrAdmin);
+  const approvedByName = useMemo(() => {
+    if (!detailLeave?.approvedBy) return null;
+    const found = targetUsers.find((u) => u.id === detailLeave.approvedBy);
+    return found?.name ?? detailLeave.approvedBy;
+  }, [detailLeave?.approvedBy, targetUsers]);
+
+  const filteredLeaves = useMemo(() => {
+    let list = [...leaves];
+    if (filters.type) {
+      list = list.filter((l) => String(l.status) === filters.type);
+    }
+    if (filters.status) {
+      list = list.filter((l) => l.leaveStatus === filters.status);
+    }
+    if (filters.startDate) {
+      list = list.filter((l) => toDateKey(l.date) >= filters.startDate!);
+    }
+    if (filters.endDate) {
+      list = list.filter((l) => toDateKey(l.date) <= filters.endDate!);
+    }
+    return list;
+  }, [leaves, filters.type, filters.status, filters.startDate, filters.endDate]);
+
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(filteredLeaves.length / pageSize));
+
+  const paginatedLeaves = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredLeaves.slice(start, start + pageSize);
+  }, [filteredLeaves, page, pageSize]);
+
+  const stats = useMemo(() => {
+    return {
+      pending: filteredLeaves.filter((l) => l.leaveStatus === 'PENDING').length,
+      approved: filteredLeaves.filter((l) => l.leaveStatus === 'APPROVED').length,
+      rejected: filteredLeaves.filter((l) => l.leaveStatus === 'REJECTED').length,
+    };
+  }, [filteredLeaves]);
 
   const handleFilterChange = useCallback((newFilters: LeaveFiltersType) => {
     setFilters((prev) => ({
@@ -50,187 +102,223 @@ export default function LeavePage() {
     }));
   }, []);
 
-  const handlePageChange = useCallback((page: number) => {
-    setFilters((prev) => ({ ...prev, page }));
+  const handlePageChange = useCallback((p: number) => {
+    setFilters((prev) => ({ ...prev, page: p }));
   }, []);
 
-  const handleViewDetails = useCallback((leave: Leave) => {
-    setSelectedLeave(leave);
-    // Could open a details modal here if needed
-    console.log('View details:', leave);
-  }, []);
+  const handleCreate = useCallback(
+    async (input: CreateLeaveInput) => {
+      try {
+        await createLeave.mutateAsync(input);
+        toast.success('Pengajuan izin berhasil dikirim.');
+        setIsCreateOpen(false);
+      } catch (e) {
+        toast.error(leaveApiErrorMessage(e));
+      }
+    },
+    [createLeave, toast]
+  );
 
-  const handleEdit = useCallback((leave: Leave) => {
-    setSelectedLeave(leave);
-    setIsEditModalOpen(true);
-  }, []);
-
-  const handleCloseEditModal = useCallback(() => {
-    setIsEditModalOpen(false);
-    setSelectedLeave(null);
-  }, []);
-
-  const handleSaveEdit = useCallback(async (editData: {
-    status?: LeaveStatus;
-    leaveReason?: string;
-    leaveFileUrl?: string;
-    leaveStatus?: LeaveApprovalStatus;
-    date?: string;
-    editReason: string;
-  }) => {
-    if (!selectedLeave) return;
-
-    try {
-      await updateLeave.mutateAsync({
-        leaveId: selectedLeave.id,
-        updateData: editData,
+  const handleApprove = useCallback(
+    async (leave: Leave) => {
+      const dateStr = new Date(leave.date).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
       });
-      
-      // Close modal on success
-      handleCloseEditModal();
-      
-      // Show success message
-      alert('Leave request updated successfully!');
-    } catch (error) {
-      console.error('Failed to update leave:', error);
-      alert('Failed to update leave. Please try again.');
-    }
-  }, [selectedLeave, updateLeave, handleCloseEditModal]);
+      const ok = await confirm({
+        title: 'Setujui pengajuan izin?',
+        message: `Setujui izin ${leave.user.name} pada ${dateStr}?`,
+        confirmLabel: 'Ya, setujui',
+        cancelLabel: 'Batal',
+        type: 'success',
+      });
+      if (!ok) return;
+      try {
+        await approveLeave.mutateAsync(leave.id);
+        toast.success('Izin disetujui.');
+      } catch (e) {
+        toast.error(leaveApiErrorMessage(e));
+      }
+    },
+    [approveLeave, confirm, toast]
+  );
 
-  const handleDelete = useCallback((leave: Leave) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete this leave request?\n\nEmployee: ${leave.user.name}\nDate: ${new Date(leave.date).toLocaleDateString('id-ID')}\n\nThis action cannot be undone.`
-    );
+  const handleReject = useCallback(
+    async (leave: Leave) => {
+      const dateStr = new Date(leave.date).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+      const ok = await confirm({
+        title: 'Tolak pengajuan izin?',
+        message: `Tolak izin ${leave.user.name} pada ${dateStr}? Tindakan ini mengubah status menjadi ditolak.`,
+        confirmLabel: 'Ya, tolak',
+        cancelLabel: 'Batal',
+        type: 'danger',
+      });
+      if (!ok) return;
+      try {
+        await rejectLeave.mutateAsync(leave.id);
+        toast.success('Izin ditolak.');
+      } catch (e) {
+        toast.error(leaveApiErrorMessage(e));
+      }
+    },
+    [confirm, rejectLeave, toast]
+  );
 
-    if (!confirmed) return;
-
-    deleteLeave.mutate(leave.id, {
-      onSuccess: () => {
-        alert('Leave request deleted successfully!');
-      },
-      onError: (error) => {
-        console.error('Failed to delete leave:', error);
-        alert(`Failed to delete leave: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      },
-    });
-  }, [deleteLeave]);
-
-  const handleViewHistory = useCallback((leave: Leave) => {
-    setSelectedLeave(leave);
-    setIsHistoryModalOpen(true);
-  }, []);
-
-  const handleCloseHistoryModal = useCallback(() => {
-    setIsHistoryModalOpen(false);
-    setSelectedLeave(null);
-  }, []);
+  const approveLoadingId = approveLeave.isPending ? approveLeave.variables : null;
+  const rejectLoadingId = rejectLeave.isPending ? rejectLeave.variables : null;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Leave Management</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Kelola pengajuan cuti/izin/sakit karyawan (Admin/Manager only)
-          </p>
-        </div>
+    <>
+      <PageContainer
+        title="Izin & sakit"
+        subtitle={
+          <>
+            Data dari endpoint <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700">GET /api/leave</code>
+            . Daftar mengikuti hak akses per role. HR/Admin dapat memproses status{' '}
+            <span className="font-medium text-slate-700">PENDING</span>.
+          </>
+        }
+        actions={
+          <Button type="button" onClick={() => setIsCreateOpen(true)}>
+            Ajukan izin
+          </Button>
+        }
+        wrapContent={false}
+      >
+        <div className="space-y-6">
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error instanceof Error ? error.message : 'Gagal memuat daftar izin'}
+            </div>
+          )}
 
-        {/* Error State */}
-        {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-sm text-red-600">{error instanceof Error ? error.message : 'Terjadi kesalahan'}</p>
-          </div>
-        )}
+          <LeaveFilters filters={filters} onFilterChange={handleFilterChange} isLoading={isLoading} />
 
-        {/* Filters */}
-        <LeaveFilters
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          isLoading={isLoading}
-        />
-
-        {/* Stats Summary */}
-        {data?.pagination && (
-          <div className="mb-4 bg-white rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                Menampilkan <span className="font-semibold text-gray-900">{data.leaves.length}</span> dari{' '}
-                <span className="font-semibold text-gray-900">{data.pagination.totalItems}</span> total leave requests
-              </div>
-              <div className="flex gap-4 text-sm">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-yellow-600">
-                    {data.leaves.filter((l: Leave) => l.leaveStatus === 'PENDING').length}
-                  </p>
-                  <p className="text-xs text-gray-600">Pending</p>
+          <Card>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <p className="text-sm text-slate-600">
+                Menampilkan{' '}
+                <span className="font-semibold text-slate-900">{paginatedLeaves.length}</span> dari{' '}
+                <span className="font-semibold text-slate-900">{filteredLeaves.length}</span> pengajuan
+                <span className="text-slate-400"> · total server: {leaves.length}</span>
+              </p>
+              <div className="flex flex-wrap gap-6 text-center text-sm">
+                <div>
+                  <p className="text-2xl font-semibold tabular-nums text-amber-700">{stats.pending}</p>
+                  <p className="text-xs text-slate-500">Pending</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">
-                    {data.leaves.filter((l: Leave) => l.leaveStatus === 'APPROVED').length}
-                  </p>
-                  <p className="text-xs text-gray-600">Approved</p>
+                <div>
+                  <p className="text-2xl font-semibold tabular-nums text-emerald-700">{stats.approved}</p>
+                  <p className="text-xs text-slate-500">Disetujui</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-red-600">
-                    {data.leaves.filter((l: Leave) => l.leaveStatus === 'REJECTED').length}
-                  </p>
-                  <p className="text-xs text-gray-600">Rejected</p>
+                <div>
+                  <p className="text-2xl font-semibold tabular-nums text-red-700">{stats.rejected}</p>
+                  <p className="text-xs text-slate-500">Ditolak</p>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          </Card>
 
-        {/* Table */}
-        <LeaveTable
-          leaves={data?.leaves || []}
-          isLoading={isLoading}
-          onViewDetails={handleViewDetails}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onViewHistory={handleViewHistory}
-        />
+          <LeaveTable
+            leaves={paginatedLeaves}
+            isLoading={isLoading}
+            onViewDetails={setDetailLeave}
+            canApproveReject={canHrAdmin}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            approveLoadingId={approveLoadingId ?? null}
+            rejectLoadingId={rejectLoadingId ?? null}
+          />
 
-        {/* Pagination */}
-        {data?.pagination && data.pagination.totalPages > 1 && (
-          <div className="mt-4 flex justify-center gap-2">
-            <button
-              onClick={() => handlePageChange(data.pagination.currentPage - 1)}
-              disabled={data.pagination.currentPage <= 1}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-            >
-              Previous
-            </button>
-            <span className="px-4 py-2 text-gray-700 flex items-center">
-              Page {data.pagination.currentPage} of {data.pagination.totalPages}
-            </span>
-            <button
-              onClick={() => handlePageChange(data.pagination.currentPage + 1)}
-              disabled={data.pagination.currentPage >= data.pagination.totalPages}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-            >
-              Next
-            </button>
-          </div>
-        )}
-      </div>
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page <= 1}
+              >
+                Sebelumnya
+              </Button>
+              <span className="flex items-center px-3 text-sm text-slate-600">
+                Halaman {page} / {totalPages}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page >= totalPages}
+              >
+                Berikutnya
+              </Button>
+            </div>
+          )}
+        </div>
+      </PageContainer>
 
-      {/* Edit Modal */}
-      <LeaveEditModal
-        leave={selectedLeave}
-        isOpen={isEditModalOpen}
-        onClose={handleCloseEditModal}
-        onSave={handleSaveEdit}
-        isLoading={updateLeave.isPending}
+      <LeaveCreateModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onCreate={handleCreate}
+        isLoading={createLeave.isPending}
+        allowHrTarget={canHrAdmin}
       />
 
-      {/* History Modal */}
-      <LeaveHistoryModal
-        history={null} // Will be fetched when modal opens
-        isOpen={isHistoryModalOpen}
-        onClose={handleCloseHistoryModal}
-      />
-    </div>
+      <ModalShell
+        isOpen={!!detailLeave}
+        onClose={() => setDetailLeave(null)}
+        title="Detail pengajuan"
+        subtitle={detailLeave ? `${detailLeave.user.name} · ${new Date(detailLeave.date).toLocaleDateString('id-ID', { dateStyle: 'long' })}` : undefined}
+        size="lg"
+        footer={
+          <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => setDetailLeave(null)}>
+            Tutup
+          </Button>
+        }
+      >
+        {detailLeave && (
+          <dl className="space-y-4 text-sm">
+            <div>
+              <dt className="text-slate-500">Karyawan</dt>
+              <dd className="font-medium text-slate-900">{detailLeave.user.name}</dd>
+              <dd className="text-slate-600">{detailLeave.user.email}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Jenis (status absensi)</dt>
+              <dd className="mt-1">
+                <LeaveStatusBadge kind="type" value={String(detailLeave.status)} />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Alasan</dt>
+              <dd className="whitespace-pre-wrap text-slate-800">{detailLeave.leaveReason}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Keputusan</dt>
+              <dd className="mt-1">
+                <LeaveStatusBadge kind="approval" value={detailLeave.leaveStatus} />
+              </dd>
+            </div>
+            {(detailLeave.approvedAt || detailLeave.approvedBy) && (
+              <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600">
+                <p>
+                  <span className="font-medium text-slate-700">approvedBy:</span>{' '}
+                  {approvedByName ?? '—'}
+                </p>
+                <p className="mt-1">
+                  <span className="font-medium text-slate-700">approvedAt:</span>{' '}
+                  {detailLeave.approvedAt ? new Date(detailLeave.approvedAt).toLocaleString('id-ID') : '—'}
+                </p>
+              </div>
+            )}
+          </dl>
+        )}
+      </ModalShell>
+    </>
   );
 }

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import PageContainer from '@/components/ui/PageContainer';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/ToastContext';
 import { useHolidays } from '@/features/calendar/hooks/useHolidays';
 import {
@@ -22,8 +24,8 @@ function HolidayTile({ date, holidays }: { date: Date; holidays: Holiday[] }) {
 
   return (
     <div
-      className={`text-xs mt-1 font-semibold truncate w-full px-1 cursor-help ${
-        isCustom ? 'text-amber-600' : 'text-red-600'
+      className={`mt-1 w-full cursor-help truncate px-1 text-xs font-semibold ${
+        isCustom ? 'text-slate-600' : 'text-indigo-700'
       }`}
       title={holiday.descriptionId ? `${holiday.nameId} - ${holiday.descriptionId}` : holiday.nameId}
     >
@@ -149,7 +151,7 @@ export default function CalendarPage() {
     <PageContainer title="Kalender Hari Libur">
       <div className="space-y-6">
         {/* Header Info */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
+        <Card padding="md" className="p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
               <h2 className="text-xl font-bold text-slate-800">
@@ -157,7 +159,11 @@ export default function CalendarPage() {
               </h2>
               {isHoliday(selectedDate) && (
                 <div className="mt-3 space-y-2">
-                  <div className={`flex items-center gap-3 ${isCustomHoliday(selectedDate) ? 'text-amber-600' : 'text-red-600'}`}>
+                  <div
+                    className={`flex items-center gap-3 ${
+                      isCustomHoliday(selectedDate) ? 'text-slate-700' : 'text-indigo-800'
+                    }`}
+                  >
                     <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
@@ -172,21 +178,24 @@ export default function CalendarPage() {
                   )}
                   {getHolidayForDate(selectedDate)?.type && (
                     <div className="ml-9 flex items-center gap-2">
-                      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                        isCustomHoliday(selectedDate)
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-red-100 text-red-700'
-                      }`}>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          isCustomHoliday(selectedDate)
+                            ? 'bg-slate-100 text-slate-800 ring-1 ring-slate-200/80'
+                            : 'bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200/80'
+                        }`}
+                      >
                         {getHolidayForDate(selectedDate)?.type}
                       </span>
                       {isCustomHoliday(selectedDate) && (
                         <button
+                          type="button"
                           onClick={() => handleDeleteCustomHoliday(getHolidayForDate(selectedDate)!)}
                           disabled={deleteMutation.isPending}
-                          className="text-amber-600 hover:text-amber-800 text-xs font-medium"
+                          className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
                           title="Hapus hari libur custom"
                         >
-                          🗑️ Hapus
+                          Hapus
                         </button>
                       )}
                     </div>
@@ -201,108 +210,105 @@ export default function CalendarPage() {
           </div>
 
           {/* Add Holiday Button */}
-          <div className="border-t pt-4">
-            <button
+          <div className="border-t border-slate-100 pt-4">
+            <Button
+              type="button"
+              variant={showAddForm ? 'outline' : 'primary'}
+              leftIcon={
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              }
               onClick={() => setShowAddForm(!showAddForm)}
-              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium flex items-center gap-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              {showAddForm ? 'Batal' : 'Tambah Hari Libur'}
-            </button>
+              {showAddForm ? 'Batal' : 'Tambah hari libur'}
+            </Button>
           </div>
-        </div>
+        </Card>
 
         {/* Add Holiday Form */}
         {showAddForm && (
-          <div className="bg-white rounded-lg border border-slate-200 p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">Tambah Hari Libur Custom</h3>
+          <Card padding="md">
+            <h3 className="mb-4 text-lg font-semibold text-slate-900">Tambah hari libur custom</h3>
             <form onSubmit={handleAddCustomHoliday} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="app-label mb-1">
                     Tanggal <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
                     value={customDate}
                     onChange={(e) => setCustomDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    className="app-input"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="app-label mb-1">
                     Tipe <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={customTypeLabel}
                     onChange={(e) => setCustomTypeLabel(e.target.value as CustomHolidayTypeLabel)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    className="app-select"
                     required
                   >
                     {Object.entries(CUSTOM_HOLIDAY_TYPE_LABELS).map(([value, label]) => (
-                      <option key={value} value={label}>{label}</option>
+                      <option key={value} value={label}>
+                        {label}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Nama Hari Libur <span className="text-red-500">*</span>
+                <label className="app-label mb-1">
+                  Nama hari libur <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
-                  placeholder="Contoh: Libur Akhir Tahun, Cuti Bersama Lebaran"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  placeholder="Contoh: Libur akhir tahun, cuti bersama Lebaran"
+                  className="app-input"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Alasan / Deskripsi <span className="text-red-500">*</span>
+                <label className="app-label mb-1">
+                  Alasan / deskripsi <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={customDescription}
                   onChange={(e) => setCustomDescription(e.target.value)}
-                  placeholder="Jelaskan alasan hari libur ini (contoh: Mengganti tanggal libur yang jatuh pada akhir pekan)"
+                  placeholder="Jelaskan alasan hari libur ini (contoh: mengganti tanggal libur yang jatuh pada akhir pekan)"
                   rows={3}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="app-input min-h-[5rem]"
                   required
                 />
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-                >
+                <Button type="button" variant="secondary" onClick={resetForm}>
                   Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                  className="px-4 py-2 text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {createMutation.isPending ? 'Menyimpan...' : 'Simpan Hari Libur'}
-                </button>
+                </Button>
+                <Button type="submit" variant="primary" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? 'Menyimpan…' : 'Simpan hari libur'}
+                </Button>
               </div>
             </form>
-          </div>
+          </Card>
         )}
 
         {/* Calendar */}
-        <div className="bg-white rounded-lg border border-slate-200 p-8">
+        <Card padding="lg" className="p-8">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600"></div>
+              <div className="h-12 w-12 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600" />
             </div>
           ) : error ? (
             <div className="text-center py-12 text-red-600">
@@ -342,28 +348,28 @@ export default function CalendarPage() {
               {/* Legend */}
               <div className="mt-8 flex flex-wrap gap-8 text-base">
                 <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 bg-red-100 border-2 border-red-300 rounded"></div>
-                  <span className="text-slate-700 font-medium">Hari Libur Nasional</span>
+                  <div className="h-6 w-6 rounded border-2 border-indigo-200 bg-indigo-50" />
+                  <span className="font-medium text-slate-700">Hari libur nasional</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 bg-amber-100 border-2 border-amber-300 rounded"></div>
-                  <span className="text-slate-700 font-medium">Custom (User)</span>
+                  <div className="h-6 w-6 rounded border-2 border-slate-200 bg-slate-50" />
+                  <span className="font-medium text-slate-700">Custom (user)</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 bg-gray-50 border-2 border-gray-200 rounded"></div>
-                  <span className="text-slate-700 font-medium">Akhir Pekan</span>
+                  <div className="h-6 w-6 rounded border-2 border-slate-200 bg-slate-50/80" />
+                  <span className="font-medium text-slate-700">Akhir pekan</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 bg-blue-600 rounded"></div>
-                  <span className="text-slate-700 font-medium">Tanggal Dipilih</span>
+                  <div className="h-6 w-6 rounded bg-indigo-600" />
+                  <span className="font-medium text-slate-700">Tanggal dipilih</span>
                 </div>
               </div>
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Holidays List for Selected Month */}
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="px-6 py-4 bg-slate-50 border-b border-slate-200">
             <h3 className="text-base font-bold text-slate-800">
               Hari Libur Bulan Ini
@@ -386,18 +392,22 @@ export default function CalendarPage() {
                 return (
                   <div
                     key={holiday.id || index}
-                    className={`px-6 py-4 flex items-start gap-4 transition-colors ${
-                      isCustom ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-slate-50'
+                    className={`flex items-start gap-4 px-6 py-4 transition-colors ${
+                      isCustom ? 'bg-slate-50/80 hover:bg-slate-100/90' : 'bg-indigo-50/30 hover:bg-indigo-50/50'
                     }`}
                   >
-                    <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-1.5 ${
-                      isCustom ? 'bg-amber-500' : 'bg-red-500'
-                    }`}></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <p className={`font-bold text-base ${
-                          isCustom ? 'text-amber-800' : 'text-slate-800'
-                        }`}>
+                    <div
+                      className={`mt-1.5 h-3 w-3 flex-shrink-0 rounded-full ${
+                        isCustom ? 'bg-slate-500' : 'bg-indigo-600'
+                      }`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <p
+                          className={`text-base font-semibold ${
+                            isCustom ? 'text-slate-900' : 'text-slate-900'
+                          }`}
+                        >
                           {holiday.nameId}
                         </p>
                         {holiday.descriptionId && (
@@ -406,9 +416,7 @@ export default function CalendarPage() {
                           </span>
                         )}
                         {isCustom && (
-                          <span className="text-xs font-semibold text-amber-600">
-                            • Custom
-                          </span>
+                          <span className="text-xs font-semibold text-slate-600">• Custom</span>
                         )}
                       </div>
                       <p className="text-sm text-slate-600 mt-1.5">
@@ -421,18 +429,21 @@ export default function CalendarPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap ${
-                        isCustom
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-red-100 text-red-700'
-                      }`}>
+                      <span
+                        className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold ${
+                          isCustom
+                            ? 'bg-slate-100 text-slate-800 ring-1 ring-slate-200/80'
+                            : 'bg-indigo-50 text-indigo-900 ring-1 ring-indigo-200/80'
+                        }`}
+                      >
                         {holiday.type}
                       </span>
                       {isCustom && (
                         <button
+                          type="button"
                           onClick={() => handleDeleteCustomHoliday(holiday)}
                           disabled={deleteMutation.isPending}
-                          className="text-amber-600 hover:text-amber-800 p-1"
+                          className="p-1 text-red-600 hover:text-red-800 disabled:opacity-50"
                           title="Hapus hari libur custom"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -450,21 +461,23 @@ export default function CalendarPage() {
 
         {/* Year Navigation */}
         <div className="flex items-center justify-center gap-6">
-          <button
-            onClick={() => setViewYear(prev => prev - 1)}
-            className="px-6 py-3 text-base font-semibold text-slate-700 bg-white border-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 rounded-xl transition-all"
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => setViewYear((prev) => prev - 1)}
           >
-            ← Tahun Sebelumnya
-          </button>
-          <span className="text-2xl font-bold text-slate-800 min-w-[120px] text-center">
-            {viewYear}
-          </span>
-          <button
-            onClick={() => setViewYear(prev => prev + 1)}
-            className="px-6 py-3 text-base font-semibold text-slate-700 bg-white border-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 rounded-xl transition-all"
+            ← Tahun sebelumnya
+          </Button>
+          <span className="min-w-[120px] text-center text-2xl font-bold text-slate-800">{viewYear}</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => setViewYear((prev) => prev + 1)}
           >
-            Tahun Berikutnya →
-          </button>
+            Tahun berikutnya →
+          </Button>
         </div>
       </div>
 
@@ -511,12 +524,12 @@ export default function CalendarPage() {
         }
 
         .react-calendar__tile--now {
-          background: #dbeafe !important;
+          background: #eef2ff !important;
           border-radius: 8px !important;
         }
 
         .react-calendar__tile--active {
-          background: #2563eb !important;
+          background: #4f46e5 !important;
           color: white !important;
           border-radius: 8px !important;
         }
@@ -526,7 +539,7 @@ export default function CalendarPage() {
         }
 
         .holiday-tile {
-          background-color: #fef2f2 !important;
+          background-color: #eef2ff !important;
           position: relative;
           border-radius: 8px !important;
         }
@@ -539,12 +552,12 @@ export default function CalendarPage() {
           transform: translateX(-50%);
           width: 10px;
           height: 10px;
-          background-color: #dc2626;
+          background-color: #4f46e5;
           border-radius: 50%;
         }
 
         .custom-holiday-tile {
-          background-color: #fef3c7 !important;
+          background-color: #f8fafc !important;
           position: relative;
           border-radius: 8px !important;
         }
@@ -557,13 +570,13 @@ export default function CalendarPage() {
           transform: translateX(-50%);
           width: 10px;
           height: 10px;
-          background-color: #d97706;
+          background-color: #64748b;
           border-radius: 50%;
         }
 
         .weekend-tile {
           background-color: #f9fafb !important;
-          color: #dc2626 !important;
+          color: #64748b !important;
           border-radius: 8px !important;
         }
         
@@ -573,7 +586,7 @@ export default function CalendarPage() {
         }
         
         .react-calendar__tile--active:enabled:hover {
-          background-color: #1d4ed8 !important;
+          background-color: #4338ca !important;
           border-radius: 8px !important;
         }
         
@@ -583,7 +596,7 @@ export default function CalendarPage() {
         }
         
         .react-calendar__tile--hasActive {
-          background: #2563eb !important;
+          background: #4f46e5 !important;
           color: white !important;
         }
       `}</style>

@@ -32,13 +32,13 @@ export default function ScheduleFilters({
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       {/* Technician Filter */}
       <div>
-        <label className="block text-xs font-medium text-slate-500 mb-1">
+        <label className="app-label mb-1 text-xs font-medium text-slate-600">
           Teknisi
         </label>
         <select
           value={filters.technicianId || ''}
           onChange={(e) => handleChange('technicianId', e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="app-select"
         >
           <option value="">Semua Teknisi</option>
           {technicians.map((tech) => (
@@ -51,13 +51,13 @@ export default function ScheduleFilters({
 
       {/* Location Filter */}
       <div>
-        <label className="block text-xs font-medium text-slate-500 mb-1">
+        <label className="app-label mb-1 text-xs font-medium text-slate-600">
           Lokasi
         </label>
         <select
           value={filters.locationId || ''}
           onChange={(e) => handleChange('locationId', e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="app-select"
         >
           <option value="">Semua Lokasi</option>
           {locations.map((loc) => (
@@ -70,13 +70,13 @@ export default function ScheduleFilters({
 
       {/* Status Filter */}
       <div>
-        <label className="block text-xs font-medium text-slate-500 mb-1">
+        <label className="app-label mb-1 text-xs font-medium text-slate-600">
           Status
         </label>
         <select
           value={filters.status || ''}
           onChange={(e) => handleChange('status', e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="app-select"
         >
           <option value="">Semua Status</option>
           {statusOptions.map((opt) => (
@@ -89,26 +89,26 @@ export default function ScheduleFilters({
 
       {/* Date Range Filter */}
       <div>
-        <label className="block text-xs font-medium text-slate-500 mb-1">
-          Dari Tanggal
+        <label className="app-label mb-1 text-xs font-medium text-slate-600">
+          Dari tanggal
         </label>
         <input
           type="date"
           value={filters.dateFrom?.split('T')[0] || ''}
           onChange={(e) => handleChange('dateFrom', e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="app-input"
         />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-500 mb-1">
-          Sampai Tanggal
+        <label className="app-label mb-1 text-xs font-medium text-slate-600">
+          Sampai tanggal
         </label>
         <input
           type="date"
           value={filters.dateTo?.split('T')[0] || ''}
           onChange={(e) => handleChange('dateTo', e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="app-input"
         />
       </div>
     </div>

@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import PageContainer from '@/components/ui/PageContainer';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import { useToast } from '@/components/ui/ToastContext';
 import {
   useSchedules,
@@ -26,6 +28,7 @@ export default function SchedulePage() {
   const [filters, setFilters] = useState<ScheduleFilterType>({
     page: 1,
     limit: 20,
+    scheduleKind: 'TECHNICIAN',
   });
 
   const { data: schedulesData, isLoading: isLoadingSchedules } = useSchedules(filters);
@@ -135,30 +138,38 @@ export default function SchedulePage() {
             Kelola penjadwalan teknisi di lokasi tertentu
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
               onClick={handleExport}
-              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors flex items-center gap-2"
+              leftIcon={
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              }
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
               Export CSV
-            </button>
-            <button
-              onClick={handleCreateClick}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-            >
-              + Buat Jadwal
-            </button>
+            </Button>
+            <Button type="button" variant="primary" size="sm" onClick={handleCreateClick}>
+              + Buat jadwal
+            </Button>
           </div>
         </div>
 
         {/* Filters */}
-        <ScheduleFilters
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          locations={locations.map((loc) => ({ id: loc.id, name: loc.name }))}
-        />
+        <Card padding="md">
+          <ScheduleFilters
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            locations={locations.map((loc) => ({ id: loc.id, name: loc.name }))}
+          />
+        </Card>
 
         {/* Schedule Table */}
         <ScheduleTable
@@ -174,23 +185,27 @@ export default function SchedulePage() {
               Menampilkan {schedules.length} dari {schedulesData.pagination.total} jadwal
             </p>
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page || 1) - 1 }))}
                 disabled={!filters.page || filters.page <= 1}
-                className="px-3 py-1 border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
-              </button>
+              </Button>
               <span>
                 Page {filters.page || 1} of {schedulesData.pagination.totalPages}
               </span>
-              <button
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))}
                 disabled={!filters.page || filters.page >= schedulesData.pagination.totalPages}
-                className="px-3 py-1 border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         )}

@@ -185,19 +185,29 @@ export function useDeleteLocation() {
   });
 }
 
-// User/Technician Hooks
-export function useTechnicians() {
+// User hooks — query key dipisah per konteks agar tidak tertukar dengan halaman lain
+export function useScheduleTechnicians() {
   return useQuery({
-    queryKey: ['technicians'],
+    queryKey: ['schedule', 'technician-assignable-users'],
     queryFn: () => userApi.getTechnicians(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 }
 
-export function useSales() {
+/** @deprecated gunakan useScheduleTechnicians */
+export function useTechnicians() {
+  return useScheduleTechnicians();
+}
+
+export function useScheduleSalesUsers() {
   return useQuery({
-    queryKey: ['sales'],
+    queryKey: ['schedule', 'sales-assignable-users'],
     queryFn: () => userApi.getSales(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
+}
+
+/** @deprecated gunakan useScheduleSalesUsers */
+export function useSales() {
+  return useScheduleSalesUsers();
 }

@@ -16,7 +16,6 @@ function MenuItem({ item, level = 0 }: MenuItemProps) {
 
   const userRole = user?.role?.toLowerCase() || "";
 
-  // Check if user has access to this menu item
   const hasAccess = !item.roles || item.roles.includes(userRole);
 
   if (!hasAccess) {
@@ -37,22 +36,24 @@ function MenuItem({ item, level = 0 }: MenuItemProps) {
     }
   };
 
+  const activeClasses =
+    isActive || (hasChildren && hasActiveChild)
+      ? "bg-slate-800/90 text-white border-l-[3px] border-indigo-400"
+      : "text-slate-300 border-l-[3px] border-transparent hover:bg-slate-800/60 hover:text-white";
+
   return (
     <div>
       <button
+        type="button"
         onClick={handleClick}
-        className={`w-full text-left px-4 py-3 hover:bg-gray-800 transition-colors ${
-          isActive || (hasChildren && hasActiveChild)
-            ? "bg-gray-800 border-l-4 border-blue-500"
-            : ""
-        }`}
-        style={{ paddingLeft: `${level * 16 + 16}px` }}
+        className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${activeClasses}`}
+        style={{ paddingLeft: `${level * 12 + 16}px` }}
       >
-        <div className="flex items-center justify-between">
-          <span>{item.label}</span>
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-medium">{item.label}</span>
           {hasChildren && (
             <svg
-              className={`w-4 h-4 transition-transform ${isOpen ? "rotate-90" : ""}`}
+              className={`w-4 h-4 shrink-0 opacity-70 transition-transform ${isOpen ? "rotate-90" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -63,7 +64,7 @@ function MenuItem({ item, level = 0 }: MenuItemProps) {
         </div>
       </button>
       {hasChildren && isOpen && (
-        <div>
+        <div className="pb-1">
           {item.children!.map((child) => (
             <MenuItem key={child.path} item={child} level={level + 1} />
           ))}
@@ -75,9 +76,12 @@ function MenuItem({ item, level = 0 }: MenuItemProps) {
 
 export default function Sidebar() {
   return (
-    <aside className="w-64 bg-gray-900 text-gray-100 shrink-0">
-      <div className="p-4 text-xl font-bold border-b border-gray-700">ERP</div>
-      <nav className="mt-4">
+    <aside className="flex w-64 shrink-0 flex-col border-r border-slate-800/80 bg-slate-950 text-slate-100">
+      <div className="border-b border-slate-800/80 px-4 py-4">
+        <div className="text-lg font-semibold tracking-tight text-white">Worksy ERP</div>
+        <p className="mt-0.5 text-xs text-slate-500">Panel admin</p>
+      </div>
+      <nav className="flex-1 overflow-y-auto py-3">
         {NAVIGATION.map((item) => (
           <MenuItem key={item.path} item={item} />
         ))}
