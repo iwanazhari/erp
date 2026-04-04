@@ -71,6 +71,22 @@ export interface Schedule {
   completedAt?: string | null;
   cancelledAt?: string | null;
   cancelledBy?: string | null;
+  cancellationReason?: string;
+  attendances?: Array<{
+    id: string;
+    userId: string;
+    date: string;
+    clockIn: string;
+    clockOut: string;
+    status: string;
+    sessionNumber?: number;
+    latitudeIn?: number;
+    longitudeIn?: number;
+    latitudeOut?: number;
+    longitudeOut?: number;
+    selfieUrlIn?: string;
+    selfieUrlOut?: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -205,13 +221,16 @@ export interface ScheduleFilters {
   status?: ScheduleStatus;
   dateFrom?: string;
   dateTo?: string;
+  search?: string;
   page?: number;
   limit?: number;
+  pageSize?: number;
 }
 
 export interface LocationFilters {
   companyId?: string;
   officeId?: string;
+  search?: string;
   isActive?: boolean;
   page?: number;
   limit?: number;

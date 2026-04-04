@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import PageContainer from '@/components/ui/PageContainer';
 import Button from '@/components/ui/Button';
 import SalesScheduleForm, {
@@ -13,9 +13,8 @@ import {
   useDeleteSalesSchedule,
 } from '@/features/schedule/hooks/useSalesSchedules';
 import { locationApi } from '@/services/scheduleApi';
-import type { Schedule, CreateScheduleInput, UpdateScheduleInput } from '@/shared/types/schedule';
+import type { Schedule, CreateScheduleInput, UpdateScheduleInput, ScheduleStatus } from '@/shared/types/schedule';
 import {
-  getPrimarySalesUserIdFromSchedule,
   getScheduleAssigneeDisplay,
   getStatusBadgeClasses,
 } from '@/features/schedule/utils/scheduleHelpers';
@@ -25,14 +24,27 @@ import type { Role } from '@/modules/auth/types';
 
 /**
  * Sales Schedule Management Page
- * Allows users with SALES role to manage their schedules
- * API: POST/GET `/api/schedules` dengan body `salesIds` dan `?scheduleKind=SALES`.
+ * Allows ADMIN/HR to manage sales schedules with filters and pagination
+ * API: POST/GET `/api/sales/schedules`
  */
 export default function SalesSchedule() {
   const toast = useToast();
   const { user } = useUser();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelId, setCancelId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+
+  // Filter states
+  const [filters, setFilters] = useState({
+    status: '',
+    dateFrom: '',
+    dateTo: '',
+    search: '',
+    page: 1,
+    pageSize: 20,
+  });
 
   // Get current time in Indonesia timezone (WIB - UTC+7)
   const getCurrentTime = () => {
@@ -48,7 +60,8 @@ export default function SalesSchedule() {
   };
 
   const [formData, setFormData] = useState<SalesScheduleFormData>({
-    technicianId: user?.role?.toLowerCase() === 'sales' ? user?.id || '' : '',
+    salesIds: [],
+    locationId: '',
     locationName: '',
     locationAddress: '',
     latitude: undefined,
@@ -60,20 +73,19 @@ export default function SalesSchedule() {
     notes: '',
   });
 
-  useEffect(() => {
-    if (user?.role?.toLowerCase() !== 'sales' || editingId) return;
-    setFormData((prev) => ({ ...prev, technicianId: user.id }));
-  }, [user?.id, user?.role, editingId]);
-
   // Check user permissions
-  const role = (user?.role?.toLowerCase() || 'technician') as Role;
+  const role = (user?.role?.toLowerCase() || 'sales') as Role;
   const canEdit = canEditSchedule(role);
   const canDelete = canDeleteSchedule(role);
 
-  // Filter schedules for current user (SALES role)
+  // Filter schedules with pagination
   const { data: schedulesData, isLoading, refetch } = useSalesSchedules({
-    page: 1,
-    limit: 50,
+    page: filters.page,
+    pageSize: filters.pageSize,
+    status: (filters.status as ScheduleStatus) || undefined,
+    dateFrom: filters.dateFrom || undefined,
+    dateTo: filters.dateTo || undefined,
+    search: filters.search || undefined,
   });
 
   const createMutation = useCreateSalesSchedule();
@@ -86,7 +98,8 @@ export default function SalesSchedule() {
 
   const resetForm = () => {
     setFormData({
-      technicianId: user?.role?.toLowerCase() === 'sales' ? user?.id || '' : '',
+      salesIds: [],
+      locationId: '',
       locationName: '',
       locationAddress: '',
       latitude: undefined,
@@ -103,8 +116,13 @@ export default function SalesSchedule() {
 
   const handleEdit = (schedule: Schedule) => {
     setEditingId(schedule.id);
+    const salesIds = schedule.participants
+      ?.filter((p) => p.role === 'SALES')
+      .map((p) => p.userId || p.user?.id)
+      .filter((id): id is string => Boolean(id)) || [];
+
     setFormData({
-      technicianId: getPrimarySalesUserIdFromSchedule(schedule) || user?.id || '',
+      salesIds,
       locationId: schedule.location.id,
       locationName: schedule.location.name,
       locationAddress: schedule.location.address,
@@ -122,23 +140,21 @@ export default function SalesSchedule() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.latitude || !formData.longitude) {
-      toast.error('Ambil koordinat dari link Google Maps terlebih dahulu.');
+    if (formData.salesIds.length === 0) {
+      toast.error('Pilih minimal satu sales yang dijadwalkan.');
       return;
     }
 
-    const isSalesSelf = user?.role?.toLowerCase() === 'sales';
-    const salesUserId = isSalesSelf ? formData.technicianId || user?.id : formData.technicianId;
-    if (!salesUserId) {
-      toast.error('Pilih user sales yang dijadwalkan.');
+    if (!formData.locationId && (!formData.latitude || !formData.longitude)) {
+      toast.error('Pilih lokasi atau ambil koordinat dari link Google Maps terlebih dahulu.');
       return;
     }
 
     try {
-      let locationId = '';
+      let locationId = formData.locationId;
 
-      // Step 1: Create new location if doesn't exist
-      if (!formData.locationId) {
+      // Step 1: Create new location if doesn't exist and coordinates provided
+      if (!locationId && formData.latitude && formData.longitude) {
         const locationData = {
           name: formData.locationName,
           address: formData.locationAddress,
@@ -150,17 +166,21 @@ export default function SalesSchedule() {
         const locationResponse = await locationApi.create(locationData);
         locationId = locationResponse.data.id;
         toast.success('Lokasi berhasil dibuat!');
-      } else {
-        locationId = formData.locationId;
+      }
+
+      if (!locationId) {
+        toast.error('Lokasi tidak valid.');
+        return;
       }
 
       // Step 2: Create/Update schedule with locationId
+      // Backend expects: date (YYYY-MM-DD), startTime (HH:mm), endTime (HH:mm)
       const payload: CreateScheduleInput | UpdateScheduleInput = {
-        salesIds: [salesUserId],
+        salesIds: formData.salesIds,
         locationId: locationId,
-        date: new Date(formData.date!).toISOString(),
-        startTime: new Date(`${formData.date}T${formData.startTime}`).toISOString(),
-        endTime: new Date(`${formData.date}T${formData.endTime}`).toISOString(),
+        date: formData.date, // YYYY-MM-DD format
+        startTime: formData.startTime, // HH:mm format
+        endTime: formData.endTime, // HH:mm format
         description: formData.description,
         notes: formData.notes,
       };
@@ -176,31 +196,56 @@ export default function SalesSchedule() {
       refetch();
     } catch (error: any) {
       console.error('Submit error:', error);
+      const statusCode = error.response?.status;
       const message = error.response?.data?.message || error.message || 'Terjadi kesalahan';
-      toast.error(message);
+      
+      // Handle specific error codes per API spec
+      if (statusCode === 400) {
+        // Backend returns 400 for validation errors including time overlap
+        toast.error(message);
+      } else if (statusCode === 403) {
+        toast.error('Anda tidak memiliki akses untuk membuat jadwal');
+      } else {
+        toast.error(message);
+      }
     }
   };
 
-  const handleCancel = async (id: string) => {
-    if (!confirm('Batal jadwal ini?')) return;
+  const handleCancel = async () => {
+    if (!cancelId) return;
     try {
-      await cancelMutation.mutateAsync(id);
-      toast.success('Jadwal dibatalkan!');
+      await cancelMutation.mutateAsync({ scheduleId: cancelId, reason: cancelReason });
+      toast.success('Jadwal berhasil dibatalkan!');
+      setCancelModalOpen(false);
+      setCancelId(null);
+      setCancelReason('');
       refetch();
     } catch (error: any) {
-      toast.error(error.message || 'Gagal membatalkan jadwal');
+      toast.error(error.response?.data?.message || error.message || 'Gagal membatalkan jadwal');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Hapus jadwal ini?')) return;
+    if (!confirm('Hapus jadwal ini? Hanya jadwal dengan status PENDING yang dapat dihapus.')) return;
     try {
       await deleteMutation.mutateAsync(id);
       toast.success('Jadwal dihapus!');
       refetch();
     } catch (error: any) {
-      toast.error(error.message || 'Gagal menghapus jadwal');
+      const message = error.response?.data?.message || error.message || 'Gagal menghapus jadwal';
+      toast.error(message);
     }
+  };
+
+  const handleFilterReset = () => {
+    setFilters({
+      status: '',
+      dateFrom: '',
+      dateTo: '',
+      search: '',
+      page: 1,
+      pageSize: 20,
+    });
   };
 
   return (
@@ -208,12 +253,69 @@ export default function SalesSchedule() {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <p className="text-slate-600">Kelola jadwal sales Anda dengan mudah</p>
+          <p className="text-slate-600">Kelola jadwal kunjungan sales</p>
           <Button type="button" variant={showForm ? 'outline' : 'primary'} onClick={() => setShowForm(!showForm)}>
             {showForm ? 'Tutup form' : '+ Jadwal baru'}
           </Button>
         </div>
 
+        {/* Filters */}
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
+                className="app-input w-full"
+              >
+                <option value="">Semua</option>
+                <option value="PENDING">Pending</option>
+                <option value="ASSIGNED">Assigned</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Tanggal Dari</label>
+              <input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value, page: 1 })}
+                className="app-input w-full"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Tanggal Sampai</label>
+              <input
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => setFilters({ ...filters, dateTo: e.target.value, page: 1 })}
+                className="app-input w-full"
+              />
+            </div>
+            <div className="lg:col-span-2">
+              <label className="mb-1 block text-sm font-medium text-slate-700">Cari</label>
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+                placeholder="Deskripsi, catatan, atau nama lokasi..."
+                className="app-input w-full"
+              />
+            </div>
+          </div>
+          {(filters.status || filters.dateFrom || filters.dateTo || filters.search) && (
+            <div className="mt-3 flex justify-end">
+              <Button type="button" variant="secondary" onClick={handleFilterReset} size="sm">
+                Reset Filter
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Form */}
         {showForm && (
           <SalesScheduleForm
             formData={formData}
@@ -226,13 +328,48 @@ export default function SalesSchedule() {
           />
         )}
 
+        {/* Cancel Modal */}
+        {cancelModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+              <h3 className="mb-4 text-lg font-semibold">Batalkan Jadwal</h3>
+              <div className="mb-4">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Alasan pembatalan <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  rows={3}
+                  className="app-input w-full"
+                  placeholder="Jelaskan alasan pembatalan..."
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="secondary" onClick={() => setCancelModalOpen(false)}>
+                  Kembali
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  onClick={handleCancel}
+                  disabled={!cancelReason.trim()}
+                >
+                  Batalkan Jadwal
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Table */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
             <h3 className="text-sm font-semibold text-slate-700">Daftar Jadwal Sales</h3>
             {pagination && (
               <p className="text-xs text-slate-500">
-                Halaman {pagination.page} dari {pagination.totalPages} - Total {pagination.total} jadwal
+                Halaman {pagination.page || filters.page} dari {pagination.totalPages || 1} - Total {pagination.total || 0} jadwal
               </p>
             )}
           </div>
@@ -262,10 +399,22 @@ export default function SalesSchedule() {
               ) : (
                 schedules.map((schedule: any) => (
                   <tr key={schedule.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-sm">{getScheduleAssigneeDisplay(schedule).name}</td>
-                    <td className="px-4 py-3 text-sm">{schedule.location.name}</td>
                     <td className="px-4 py-3 text-sm">
-                      <div>{new Date(schedule.date).toLocaleDateString('id-ID')}</div>
+                      <div className="font-medium">{getScheduleAssigneeDisplay(schedule).name}</div>
+                      {schedule.participants?.length > 1 && (
+                        <div className="text-xs text-slate-500">
+                          +{schedule.participants.length - 1} sales lainnya
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <div className="font-medium">{schedule.location.name}</div>
+                      <div className="text-xs text-slate-500 truncate max-w-[200px]">
+                        {schedule.location.address}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <div>{new Date(schedule.date).toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</div>
                       <div className="text-slate-500 text-xs">
                         {schedule.startTime.split('T')[1].slice(0, 5)} - {schedule.endTime.split('T')[1].slice(0, 5)}
                       </div>
@@ -279,29 +428,34 @@ export default function SalesSchedule() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        {canEdit && schedule.status === 'ASSIGNED' && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handleEdit(schedule)}
-                              className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
-                              title="Edit jadwal"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleCancel(schedule.id)}
-                              className="text-amber-600 hover:text-amber-800 text-sm"
-                              title="Batal jadwal"
-                            >
-                              Batal
-                            </button>
-                          </>
+                        {canEdit && schedule.status !== 'CANCELLED' && schedule.status !== 'COMPLETED' && (
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(schedule)}
+                            className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                            title="Edit jadwal"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {canEdit && schedule.status !== 'CANCELLED' && schedule.status !== 'COMPLETED' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCancelId(schedule.id);
+                              setCancelModalOpen(true);
+                            }}
+                            className="text-sm font-medium text-amber-600 hover:text-amber-800"
+                            title="Batal jadwal"
+                          >
+                            Batal
+                          </button>
                         )}
                         {canDelete && schedule.status === 'PENDING' && (
                           <button
+                            type="button"
                             onClick={() => handleDelete(schedule.id)}
-                            className="text-red-600 hover:text-red-800 text-sm"
+                            className="text-sm font-medium text-red-600 hover:text-red-800"
                             title="Hapus jadwal"
                           >
                             Hapus
@@ -314,6 +468,47 @@ export default function SalesSchedule() {
               )}
             </tbody>
           </table>
+
+          {/* Pagination */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-600">Tampilkan:</span>
+                <select
+                  value={filters.pageSize}
+                  onChange={(e) => setFilters({ ...filters, pageSize: Number(e.target.value), page: 1 })}
+                  className="app-input"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={filters.page === 1}
+                  onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
+                >
+                  Prev
+                </Button>
+                <span className="text-sm text-slate-600">
+                  {filters.page} / {pagination.totalPages}
+                </span>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={filters.page >= pagination.totalPages}
+                  onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </PageContainer>

@@ -31,12 +31,14 @@ export const salesScheduleApi = {
     const params = new URLSearchParams();
 
     if (filters?.page) params.append('page', String(filters.page));
-    if (filters?.limit) params.append('limit', String(filters.limit));
-    if (filters?.technicianId) params.append('technicianId', filters.technicianId);
+    if (filters?.pageSize || filters?.limit) params.append('pageSize', String(filters.pageSize || filters.limit));
+    // Support both salesId (new) and technicianId (legacy) for filtering
+    if (filters?.technicianId) params.append('salesId', filters.technicianId);
     if (filters?.locationId) params.append('locationId', filters.locationId);
     if (filters?.status) params.append('status', filters.status);
     if (filters?.dateFrom) params.append('dateFrom', filters.dateFrom);
     if (filters?.dateTo) params.append('dateTo', filters.dateTo);
+    if (filters?.search) params.append('search', filters.search);
 
     const response = await privateApi.get(`/sales/schedules?${params}`);
     return response.data;

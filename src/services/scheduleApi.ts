@@ -27,6 +27,7 @@ export const locationApi = {
 
     if (filters?.companyId) params.append('companyId', filters.companyId);
     if (filters?.officeId) params.append('officeId', filters.officeId);
+    if (filters?.search) params.append('search', filters.search);
     if (filters?.isActive !== undefined) params.append('isActive', String(filters.isActive));
     if (filters?.page) params.append('page', String(filters.page));
     if (filters?.limit) params.append('limit', String(filters.limit));

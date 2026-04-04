@@ -14,16 +14,19 @@ export function getScheduleAssigneeDisplay(schedule: Schedule): {
 } {
   const kind = resolveScheduleKind(schedule);
   if (kind === 'SALES') {
-    const salesP =
-      schedule.participants?.find((p) => (p.role || p.user?.role || '').toUpperCase() === 'SALES') ??
-      schedule.participants?.[0];
+    // Get first sales participant for display
+    const salesParticipants = schedule.participants?.filter(
+      (p) => (p.role || p.user?.role || '').toUpperCase() === 'SALES'
+    ) || [];
+    
+    const firstSales = salesParticipants[0];
     const name =
-      salesP?.user?.name ??
-      (salesP as { name?: string })?.name ??
+      firstSales?.user?.name ??
+      (firstSales as { name?: string })?.name ??
       schedule.technician?.name ??
-      '—';
+      `${salesParticipants.length} Sales`;
     const email =
-      salesP?.user?.email ?? (salesP as { email?: string })?.email ?? schedule.technician?.email;
+      firstSales?.user?.email ?? (firstSales as { email?: string })?.email ?? schedule.technician?.email;
     return { name, email, kind: 'SALES' };
   }
   const t = schedule.technician;
