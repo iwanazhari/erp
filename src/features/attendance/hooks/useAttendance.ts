@@ -126,17 +126,33 @@ export function useAttendanceRecords(filters: AttendanceRecordsFilters = {}) {
     queryKey: attendanceKeys.records(filters),
     queryFn: async () => {
       const response = await attendanceApi.getAllRecords(filters);
+      console.log('[useAttendanceRecords] Raw API Response:', response);
       return response.data;
     },
     select: (data) => {
-      // Handle nested response structure
+      console.log('[useAttendanceRecords] Before select - data:', data);
+      
+      // Handle structure: { records, pagination }
       if (data && 'records' in data && 'pagination' in data) {
+        console.log('[useAttendanceRecords] Matched case 1: direct records');
         return data;
       }
-      // If data is nested inside another data object
+      // Handle double-nested structure from backend: { data: { data: { records, pagination } } }
       if (data && (data as any).data) {
-        return (data as any).data;
+        const inner = (data as any).data;
+        console.log('[useAttendanceRecords] Inner data:', inner);
+        // If inner has records and pagination, return it
+        if (inner && 'records' in inner && 'pagination' in inner) {
+          console.log('[useAttendanceRecords] Matched case 2: one level nested');
+          return inner;
+        }
+        // If inner also has data, go one more level
+        if (inner && inner.data && 'records' in inner.data && 'pagination' in inner.data) {
+          console.log('[useAttendanceRecords] Matched case 3: two levels nested');
+          return inner.data;
+        }
       }
+      console.log('[useAttendanceRecords] No match, returning as-is');
       return data;
     },
   });
