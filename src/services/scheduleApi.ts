@@ -87,8 +87,10 @@ async function fetchAllUsersPaged(): Promise<User[]> {
       params: { page, limit },
     });
 
-    const users = response.data.data || response.data;
-    const total = response.data.total || users.length;
+    // Backend searchUsers returns: { success, message, data: { users: [...], pagination: {...}, total, totalPages } }
+    const dataObj = response.data?.data || response.data || {};
+    const users = dataObj.users ?? (Array.isArray(dataObj) ? dataObj : []);
+    const total = dataObj.total ?? users.length;
 
     if (Array.isArray(users)) {
       allUsers.push(...users);

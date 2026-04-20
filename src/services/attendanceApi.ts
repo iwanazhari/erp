@@ -10,6 +10,8 @@ import type {
   MonthlyReportExportFilters,
   HistoryExportFilters,
   AllRecordsExportFilters,
+  MonthlyGridData,
+  MonthlyGridFilters,
   ApiResponse,
 } from '@/shared/types/attendance';
 
@@ -200,7 +202,7 @@ export const attendanceApi = {
    * Export All Attendance Records to Excel
    * Endpoint: GET /api/attendance/export/records
    * Access: ADMIN ONLY
-   * 
+   *
    * @param filters - Export filters (startDate, endDate, status, clockOutStatus)
    * @returns Blob (Excel file)
    */
@@ -214,6 +216,60 @@ export const attendanceApi = {
 
     const response = await privateApi.get<Blob>(
       `/attendance/export/records?${params}`,
+      {
+        responseType: 'blob',
+      }
+    );
+    return response.data;
+  },
+
+  /**
+   * Get monthly attendance grid with daily breakdown per user
+   * Endpoint: GET /api/attendance/report/monthly-grid
+   * Access: ADMIN, HR, MANAGER
+   *
+   * Features:
+   * - Daily grid for each day of the month
+   * - Clock-in/out times per day with late highlighting
+   * - Leave classification (CUTI_TAHUNAN vs SID)
+   * - Attendance percentage calculation
+   * - Balance info (sisaCuti, sisaSid)
+   *
+   * @param filters - Query parameters (year, month, q, page, pageSize)
+   * @returns ApiResponse<MonthlyGridData>
+   */
+  getMonthlyGrid: async (filters?: MonthlyGridFilters): Promise<ApiResponse<MonthlyGridData>> => {
+    const params = new URLSearchParams();
+
+    if (filters?.year) params.append('year', String(filters.year));
+    if (filters?.month) params.append('month', String(filters.month));
+    if (filters?.q) params.append('q', filters.q);
+    if (filters?.page) params.append('page', String(filters.page));
+    if (filters?.pageSize) params.append('pageSize', String(filters.pageSize));
+
+    const response = await privateApi.get<ApiResponse<MonthlyGridData>>(
+      `/attendance/report/monthly-grid?${params}`
+    );
+    return response.data;
+  },
+
+  /**
+   * Export Monthly Grid Report to Excel
+   * Endpoint: GET /api/attendance/export/grid
+   * Access: ADMIN, HR, MANAGER
+   *
+   * @param filters - Export filters (year, month, q)
+   * @returns Blob (Excel file)
+   */
+  exportMonthlyGrid: async (filters?: MonthlyGridFilters): Promise<Blob> => {
+    const params = new URLSearchParams();
+
+    if (filters?.year) params.append('year', String(filters.year));
+    if (filters?.month) params.append('month', String(filters.month));
+    if (filters?.q) params.append('q', filters.q);
+
+    const response = await privateApi.get<Blob>(
+      `/attendance/export/grid?${params}`,
       {
         responseType: 'blob',
       }

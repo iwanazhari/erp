@@ -2,38 +2,23 @@ import { useState } from 'react';
 import PageContainer from '@/components/ui/PageContainer';
 import ExportButtons from '@/features/attendance/components/ExportButtons';
 import { useAttendanceExport } from '@/features/attendance/hooks/useAttendanceExport';
+import MonthlyGridReportPage from '@/features/attendance/pages/MonthlyGridReportPage';
+import DeferredPaymentReportPage from '@/features/attendance/pages/DeferredPaymentReportPage';
 import type {
-  MonthlyReportExportFilters,
   HistoryExportFilters,
   AllRecordsExportFilters,
 } from '@/shared/types/attendance';
 
 /**
- * Attendance Reports Page
- * 
- * Provides Excel export functionality for attendance data.
- * Supports 3 export types:
- * - Monthly Report (ADMIN, MANAGER)
- * - Attendance History (ADMIN, MANAGER)
- * - All Records (ADMIN ONLY)
- * 
- * Features:
- * - Date range filters
- * - Status filters
- * - User search
- * - Real-time export status
- * - Error handling
- * 
- * @access ADMIN, MANAGER
+ * Reports Page
+ *
+ * Main entry point for all attendance and payment reports with filter support:
+ * - Grid Bulanan: Daily attendance grid per user (filter per tanggal + per user)
+ * - Riwayat: Attendance history (filter per tanggal + per user)
+ * - Semua Data: All records export (filter per tanggal)
+ * - Pembayaran: Deferred payment report (filter per tanggal + per teknisi)
  */
-export default function AttendanceReportsPage() {
-  // Monthly Report Filters
-  const [monthlyFilters, setMonthlyFilters] = useState<MonthlyReportExportFilters>({
-    year: new Date().getFullYear(),
-    month: new Date().getMonth() + 1,
-    q: '',
-  });
-
+export default function Reports() {
   // History Export Filters
   const [historyFilters, setHistoryFilters] = useState<HistoryExportFilters>({
     startDate: '',
@@ -51,145 +36,73 @@ export default function AttendanceReportsPage() {
   });
 
   // Active tab
-  const [activeTab, setActiveTab] = useState<'monthly' | 'history' | 'allRecords'>('monthly');
+  const [activeTab, setActiveTab] = useState<'monthlyGrid' | 'history' | 'allRecords' | 'payment'>('monthlyGrid');
 
   const { exportState } = useAttendanceExport();
 
-  // Get current year and month for display
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-
-  // Month names for display
-  const monthNames = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
-  ];
-
   return (
-    <PageContainer title="📊 Laporan Attendance">
+    <PageContainer title="📊 Laporan">
       <div className="space-y-6">
         {/* Export Type Tabs */}
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
+          <nav className="-mb-px flex space-x-4 overflow-x-auto">
             <button
-              onClick={() => setActiveTab('monthly')}
+              onClick={() => setActiveTab('monthlyGrid')}
               className={`
-                py-4 px-1 border-b-2 font-medium text-sm
-                ${activeTab === 'monthly'
+                py-4 px-3 border-b-2 font-medium text-sm whitespace-nowrap
+                ${activeTab === 'monthlyGrid'
                   ? 'border-emerald-500 text-emerald-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }
               `}
             >
-              📅 Laporan Bulanan
+              📊 Grid Bulanan
             </button>
             <button
               onClick={() => setActiveTab('history')}
               className={`
-                py-4 px-1 border-b-2 font-medium text-sm
+                py-4 px-3 border-b-2 font-medium text-sm whitespace-nowrap
                 ${activeTab === 'history'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }
               `}
             >
-              📋 Riwayat Attendance
+              📋 Riwayat
+            </button>
+            <button
+              onClick={() => setActiveTab('payment')}
+              className={`
+                py-4 px-3 border-b-2 font-medium text-sm whitespace-nowrap
+                ${activeTab === 'payment'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }
+              `}
+            >
+              💰 Pembayaran
             </button>
             <button
               onClick={() => setActiveTab('allRecords')}
               className={`
-                py-4 px-1 border-b-2 font-medium text-sm
+                py-4 px-3 border-b-2 font-medium text-sm whitespace-nowrap
                 ${activeTab === 'allRecords'
                   ? 'border-purple-500 text-purple-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }
               `}
             >
-              📁 Semua Data (ADMIN)
+              📁 Semua Data
             </button>
           </nav>
         </div>
 
-        {/* Monthly Report Tab */}
-        {activeTab === 'monthly' && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Export Laporan Bulanan
-              </h3>
-              <p className="text-gray-600 text-sm mb-6">
-                Download rekap bulanan attendance semua user dalam format Excel dengan 2 sheet:
-                Rekap Bulanan dan Statistik.
-              </p>
-
-              {/* Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tahun
-                  </label>
-                  <select
-                    value={monthlyFilters.year || currentYear}
-                    onChange={(e) => setMonthlyFilters({ ...monthlyFilters, year: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  >
-                    {Array.from({ length: 5 }, (_, i) => currentYear - 2 + i).map((year) => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bulan
-                  </label>
-                  <select
-                    value={monthlyFilters.month || currentMonth}
-                    onChange={(e) => setMonthlyFilters({ ...monthlyFilters, month: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  >
-                    {monthNames.map((month, index) => (
-                      <option key={index + 1} value={index + 1}>{month}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cari User (Opsional)
-                  </label>
-                  <input
-                    type="text"
-                    value={monthlyFilters.q || ''}
-                    onChange={(e) => setMonthlyFilters({ ...monthlyFilters, q: e.target.value })}
-                    placeholder="Nama atau email..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  />
-                </div>
-              </div>
-
-              {/* Export Button */}
-              <ExportButtons
-                showMonthly
-                defaultMonthlyFilters={monthlyFilters}
-                className="justify-start"
-              />
-
-              {/* Info */}
-              <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-                <p className="text-sm text-emerald-800">
-                  <strong>📊 Sheet yang akan diexport:</strong>
-                </p>
-                <ul className="mt-2 text-sm text-emerald-700 space-y-1">
-                  <li>• <strong>Rekap Bulanan:</strong> Ringkasan attendance semua user (Hadir, Terlambat, Alpa, Izin, Sakit)</li>
-                  <li>• <strong>Statistik:</strong> Total statistik attendance untuk periode {monthNames[(monthlyFilters.month || currentMonth) - 1]} {monthlyFilters.year || currentYear}</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+        {/* Monthly Grid Report Tab */}
+        {activeTab === 'monthlyGrid' && (
+          <MonthlyGridReportPage />
         )}
 
-        {/* History Tab */}
+        {/* History Export Tab */}
         {activeTab === 'history' && (
           <div className="space-y-4">
             <div className="bg-white rounded-lg shadow p-6">
@@ -197,14 +110,14 @@ export default function AttendanceReportsPage() {
                 Export Riwayat Attendance
               </h3>
               <p className="text-gray-600 text-sm mb-6">
-                Download riwayat attendance dengan detail lengkap dalam format Excel.
+                Download riwayat attendance dengan filter <strong>tanggal</strong> dan <strong>user</strong> dalam format Excel.
               </p>
 
               {/* Filters */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tanggal Mulai
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    📅 Tanggal Mulai
                   </label>
                   <input
                     type="date"
@@ -215,8 +128,8 @@ export default function AttendanceReportsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tanggal Akhir
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    📅 Tanggal Akhir
                   </label>
                   <input
                     type="date"
@@ -227,7 +140,20 @@ export default function AttendanceReportsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    👤 User ID (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={historyFilters.userId || ''}
+                    onChange={(e) => setHistoryFilters({ ...historyFilters, userId: e.target.value })}
+                    placeholder="UUID user..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status (Opsional)
                   </label>
                   <select
@@ -243,19 +169,6 @@ export default function AttendanceReportsPage() {
                     <option value="SAKIT">Sakit</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    User ID (Opsional)
-                  </label>
-                  <input
-                    type="text"
-                    value={historyFilters.userId || ''}
-                    onChange={(e) => setHistoryFilters({ ...historyFilters, userId: e.target.value })}
-                    placeholder="UUID user..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
               </div>
 
               {/* Export Button */}
@@ -268,16 +181,21 @@ export default function AttendanceReportsPage() {
               {/* Info */}
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  <strong>📋 Data yang akan diexport:</strong>
+                  <strong>📋 Filter yang tersedia:</strong>
                 </p>
                 <ul className="mt-2 text-sm text-blue-700 space-y-1">
-                  <li>• Detail attendance: Clock In/Out time, lokasi, status, payment</li>
-                  <li>• Info user: Nama, email, role</li>
-                  <li>• Info kantor: Nama, alamat, shift</li>
+                  <li>• <strong>Per Tanggal:</strong> Tentukan rentang tanggal mulai dan akhir</li>
+                  <li>• <strong>Per User:</strong> Masukkan User ID untuk filter spesifik</li>
+                  <li>• <strong>Status:</strong> Filter berdasarkan status kehadiran</li>
                 </ul>
               </div>
             </div>
           </div>
+        )}
+
+        {/* Payment Report Tab */}
+        {activeTab === 'payment' && (
+          <DeferredPaymentReportPage />
         )}
 
         {/* All Records Tab */}
@@ -293,14 +211,14 @@ export default function AttendanceReportsPage() {
                 </span>
               </div>
               <p className="text-gray-600 text-sm mb-6">
-                Download semua data attendance dengan informasi lengkap dalam format Excel dengan 3 sheet.
+                Download semua data attendance dengan filter <strong>tanggal</strong> dalam format Excel dengan 3 sheet.
               </p>
 
               {/* Filters */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tanggal Mulai
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    📅 Tanggal Mulai
                   </label>
                   <input
                     type="date"
@@ -311,8 +229,8 @@ export default function AttendanceReportsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tanggal Akhir
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    📅 Tanggal Akhir
                   </label>
                   <input
                     type="date"
@@ -323,7 +241,7 @@ export default function AttendanceReportsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status (Opsional)
                   </label>
                   <select
@@ -341,8 +259,8 @@ export default function AttendanceReportsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Clock Out Status (Opsional)
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Clock Out (Opsional)
                   </label>
                   <select
                     value={allRecordsFilters.clockOutStatus || ''}
@@ -368,19 +286,19 @@ export default function AttendanceReportsPage() {
               {/* Info */}
               <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
                 <p className="text-sm text-purple-800">
-                  <strong>📁 Sheet yang akan diexport:</strong>
+                  <strong>📁 Filter yang tersedia:</strong>
                 </p>
                 <ul className="mt-2 text-sm text-purple-700 space-y-1">
-                  <li>• <strong>Semua Data:</strong> 50+ kolom dengan informasi lengkap (user, attendance, payment, leave, dll)</li>
-                  <li>• <strong>Summary per User:</strong> Ringkasan attendance per user</li>
-                  <li>• <strong>Statistik:</strong> Statistik global untuk periode yang dipilih</li>
+                  <li>• <strong>Per Tanggal:</strong> Tentukan rentang tanggal mulai dan akhir</li>
+                  <li>• <strong>Status:</strong> Filter berdasarkan status kehadiran</li>
+                  <li>• <strong>Clock Out:</strong> Filter berdasarkan status clock out</li>
                 </ul>
               </div>
 
               {/* Warning */}
               <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
-                  <strong>⚠️ Perhatian:</strong> Export ini hanya tersedia untuk ADMIN. File yang dihasilkan mungkin berukuran besar tergantung periode yang dipilih.
+                  <strong>⚠️ Perhatian:</strong> Export ini hanya tersedia untuk ADMIN.
                 </p>
               </div>
             </div>

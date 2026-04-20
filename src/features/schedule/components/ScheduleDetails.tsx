@@ -66,10 +66,16 @@ export default function ScheduleDetails({ schedule, onEdit, onCancel, onDelete }
       {/* Location */}
       <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 p-4">
         <p className="mb-1 text-xs font-medium text-indigo-800">Lokasi</p>
-        <p className="text-sm font-medium text-slate-900">{schedule.location.name}</p>
-        <p className="mt-1 text-sm text-slate-700">{schedule.location.address}</p>
-        {schedule.location.description && (
-          <p className="mt-2 text-xs text-slate-600">{schedule.location.description}</p>
+        {schedule.location ? (
+          <>
+            <p className="text-sm font-medium text-slate-900">{schedule.location.name}</p>
+            <p className="mt-1 text-sm text-slate-700">{schedule.location.address}</p>
+            {schedule.location.description && (
+              <p className="mt-2 text-xs text-slate-600">{schedule.location.description}</p>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-slate-500">Tidak ada lokasi</p>
         )}
       </div>
 

@@ -112,6 +112,7 @@ export function AttendanceDetailsModal({
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: 'Asia/Jakarta',
     });
   };
 
@@ -119,6 +120,7 @@ export function AttendanceDetailsModal({
     return new Date(dateString).toLocaleTimeString('id-ID', {
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'Asia/Jakarta',
     });
   };
 
@@ -141,6 +143,42 @@ export function AttendanceDetailsModal({
     };
     return labels[status] || status;
   };
+
+  // Resolve photo URLs from nested or flat structure
+  const r = record as any;
+
+  const selfieUrlIn = r.selfieUrlIn || r.photos?.clockIn || null;
+  const selfieUrlOut = r.selfieUrlOut || r.photos?.clockOut || null;
+  const jobCompletionPhotos = r.photos?.jobCompletion || r.photos?.jobCompletionPhotos || null;
+  const signatureUrl = r.photos?.signature || r.customerSignature || null;
+  const airWaterPhoto = r.photos?.airWater || r.airWaterPhoto || null;
+
+  const BASE_URL = import.meta.env.VITE_API_PUBLIC_URL || 'http://157.66.34.174:15320';
+
+  const resolveImageUrl = (path: string | null) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    if (path.includes('[object Object]')) return null;
+    if (path.startsWith('/attendance/')) {
+      let cleanPath = path.replace('/attendance/out/', '/attendance/in/');
+      cleanPath = cleanPath.replace('.jpg', '.bin');
+      const key = cleanPath.replace(/^\//, '');
+      return `${BASE_URL}/api/images/${key}`;
+    }
+    return `${BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+  };
+
+  const selfieInUrl = resolveImageUrl(selfieUrlIn);
+  const selfieOutUrl = resolveImageUrl(selfieUrlOut);
+  const jobCompletionUrl = resolveImageUrl(jobCompletionPhotos);
+  const signatureImageUrl = resolveImageUrl(signatureUrl);
+  const airWaterImageUrl = resolveImageUrl(airWaterPhoto);
+
+  const hasPhotos = !!(selfieInUrl || selfieOutUrl || jobCompletionUrl || signatureImageUrl || airWaterImageUrl);
+
+  console.log('[ATTENDANCE DETAIL] Has photos:', hasPhotos);
+  console.log('[ATTENDANCE DETAIL] Resolved:', { selfieInUrl, selfieOutUrl });
+  console.log('[ATTENDANCE DETAIL] === END PHOTO DEBUG ===');
 
   const googleMapsUrlIn = record.latitudeIn && record.longitudeIn
     ? `https://www.google.com/maps?q=${record.latitudeIn},${record.longitudeIn}`
@@ -300,28 +338,68 @@ export function AttendanceDetailsModal({
               </div>
             )}
 
-            {/* Selfie Photos */}
-            {(record.selfieUrlIn || record.selfieUrlOut) && (
+            {/* Selfie & Attendance Photos */}
+            {hasPhotos && (
               <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Foto Selfie</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Foto Absensi</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  {record.selfieUrlIn && (
+                  {/* Clock In Selfie */}
+                  {selfieInUrl && (
                     <div>
                       <span className="text-gray-500 text-xs">Clock In</span>
                       <img
-                        src={record.selfieUrlIn}
+                        src={selfieInUrl}
                         alt="Selfie Clock In"
-                        className="mt-1 w-full h-32 object-cover rounded-lg border border-gray-200"
+                        className="mt-1 w-full h-40 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                        onClick={() => window.open(selfieInUrl, '_blank')}
                       />
                     </div>
                   )}
-                  {record.selfieUrlOut && (
+                  {/* Clock Out Selfie */}
+                  {selfieOutUrl && (
                     <div>
                       <span className="text-gray-500 text-xs">Clock Out</span>
                       <img
-                        src={record.selfieUrlOut}
+                        src={selfieOutUrl}
                         alt="Selfie Clock Out"
-                        className="mt-1 w-full h-32 object-cover rounded-lg border border-gray-200"
+                        className="mt-1 w-full h-40 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                        onClick={() => window.open(selfieOutUrl, '_blank')}
+                      />
+                    </div>
+                  )}
+                  {/* Job Completion Photos */}
+                  {jobCompletionUrl && (
+                    <div>
+                      <span className="text-gray-500 text-xs">Hasil Kerja</span>
+                      <img
+                        src={jobCompletionUrl}
+                        alt="Job Completion"
+                        className="mt-1 w-full h-40 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                        onClick={() => window.open(jobCompletionUrl, '_blank')}
+                      />
+                    </div>
+                  )}
+                  {/* Customer Signature */}
+                  {signatureImageUrl && (
+                    <div>
+                      <span className="text-gray-500 text-xs">Tanda Tangan Pelanggan</span>
+                      <img
+                        src={signatureImageUrl}
+                        alt="Customer Signature"
+                        className="mt-1 w-full h-40 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                        onClick={() => window.open(signatureImageUrl, '_blank')}
+                      />
+                    </div>
+                  )}
+                  {/* Air/Water Photo */}
+                  {airWaterImageUrl && (
+                    <div>
+                      <span className="text-gray-500 text-xs">Foto Hasil Akhir Air</span>
+                      <img
+                        src={airWaterImageUrl}
+                        alt="Air/Water Result"
+                        className="mt-1 w-full h-40 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                        onClick={() => window.open(airWaterImageUrl, '_blank')}
                       />
                     </div>
                   )}

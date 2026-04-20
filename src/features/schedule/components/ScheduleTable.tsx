@@ -74,9 +74,9 @@ export default function ScheduleTable({ schedules, onRowClick, isLoading }: Prop
                 </td>
                 <td className="px-4 py-4">
                   <div>
-                    <p className="font-medium text-slate-800">{schedule.location.name}</p>
+                    <p className="font-medium text-slate-800">{schedule.location?.name || '---'}</p>
                     <p className="text-xs text-slate-500 truncate max-w-xs">
-                      {schedule.location.address}
+                      {schedule.location?.address || ''}
                     </p>
                   </div>
                 </td>

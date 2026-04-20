@@ -152,6 +152,7 @@ export function formatScheduleTime(dateString: string): string {
   return date.toLocaleTimeString('id-ID', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'Asia/Jakarta',
   });
 }
 
@@ -162,6 +163,7 @@ export function formatScheduleDate(dateString: string): string {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: 'Asia/Jakarta',
   });
 }
 

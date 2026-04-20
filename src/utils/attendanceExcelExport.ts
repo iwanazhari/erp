@@ -133,7 +133,7 @@ export function formatRupiah(amount: number): string {
  */
 export function formatDateIndonesian(dateString: string): string {
   if (!dateString) return '';
-  
+
   const date = new Date(dateString);
   return date.toLocaleString('id-ID', {
     year: 'numeric',
@@ -142,6 +142,7 @@ export function formatDateIndonesian(dateString: string): string {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    timeZone: 'Asia/Jakarta',
   });
 }
 

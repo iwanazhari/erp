@@ -1,5 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useAttendanceRecords, useUpdateAttendance } from '@/features/attendance/hooks/useAttendance';
+import { useAttendanceRecords } from '@/features/attendance/hooks/useAttendance';
+import { userApi } from '@/services/userApi';
+import type { UserOption } from '@/services/userApi';
 import {
   AttendanceDailyTable,
   AttendanceDetailsModal,
@@ -12,8 +14,11 @@ const DEFAULT_PAGE_SIZE = 50;
 /**
  * Attendance History Page Component
  *
- * Displays all users' attendance records using GET /api/attendance/records endpoint.
- * Simple table view matching the screenshot design with search and date filters.
+ * Displays ALL attendance records with server-side filtering:
+ * - **Filter per tanggal**: startDate & endDate (passed to API)
+ * - **Filter per user**: userId (passed to API)
+ *
+ * Uses GET /api/attendance/records endpoint (ADMIN only - no companyId filter).
  */
 export default function AttendanceHistoryPage() {
   const [filters, setFilters] = useState<AttendanceRecordsFilters>({
@@ -24,20 +29,81 @@ export default function AttendanceHistoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
-  
-  // Local filters for search and date range
-  const [searchQuery, setSearchQuery] = useState('');
+
+  // Server-side filters (passed to API)
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState('');
 
-  // Mutation hook for updating attendance
-  const updateAttendance = useUpdateAttendance();
+  // User search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<UserOption[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  // Debounced user search
+  const searchTimeout = useMemo(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    return (query: string) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(async () => {
+        if (query.trim().length >= 2) {
+          setIsSearching(true);
+          try {
+            const response = await userApi.searchUsers(query.trim());
+            setSearchResults(response.data.users || []);
+            setShowDropdown(true);
+          } catch {
+            setSearchResults([]);
+          } finally {
+            setIsSearching(false);
+          }
+        } else {
+          setSearchResults([]);
+          setShowDropdown(false);
+        }
+      }, 400);
+      return timeoutId;
+    };
+  }, []);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    searchTimeout(value);
+  }, [searchTimeout]);
+
+  const handleSelectUser = useCallback((user: UserOption) => {
+    setSelectedUserId(user.id);
+    setSearchQuery(user.name);
+    setShowDropdown(false);
+  }, []);
+
+  const handleClearUser = useCallback(() => {
+    setSelectedUserId('');
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowDropdown(false);
+  }, []);
+
+  // Build server-side filters for /attendance/records
+  const apiFilters = useMemo<AttendanceRecordsFilters>(() => {
+    const f: AttendanceRecordsFilters = {
+      page: filters.page,
+      pageSize: filters.pageSize,
+    };
+
+    if (startDate) f.startDate = startDate;
+    if (endDate) f.endDate = endDate;
+
+    return f;
+  }, [filters.page, filters.pageSize, startDate, endDate]);
 
   const {
     data,
     isLoading,
     error,
-  } = useAttendanceRecords(filters);
+  } = useAttendanceRecords(apiFilters);
 
   const handlePageChange = useCallback((page: number) => {
     setFilters((prev) => ({ ...prev, page }));
@@ -54,10 +120,8 @@ export default function AttendanceHistoryPage() {
   }, []);
 
   const handleEdit = useCallback((record: AttendanceRecord) => {
-    console.log('Edit clicked for record:', record.id, record.user.name);
     setEditingRecord(record);
     setIsEditModalOpen(true);
-    console.log('Edit modal should be open now');
   }, []);
 
   const handleCloseEditModal = useCallback(() => {
@@ -69,90 +133,51 @@ export default function AttendanceHistoryPage() {
     if (!editingRecord) return;
 
     try {
-      // Extract date from clockIn (format: YYYY-MM-DD)
       const clockInDate = new Date(editingRecord.clockIn);
       const year = clockInDate.getFullYear();
       const month = (clockInDate.getMonth() + 1).toString().padStart(2, '0');
       const day = clockInDate.getDate().toString().padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
 
-      await updateAttendance.mutateAsync({
-        id: editingRecord.id,
-        date: dateStr,
-        checkIn: editData.checkIn,
-        checkOut: editData.checkOut,
+      // Use privateApi directly for the update
+      const { privateApi } = await import('@/services/authApi');
+      await privateApi.put(`/attendance/${editingRecord.id}`, {
         status: editData.status,
         editReason: editData.editReason,
+        clockIn: editData.checkIn ? new Date(`${dateStr}T${editData.checkIn}:00`).toISOString() : undefined,
+        clockOut: editData.checkOut ? new Date(`${dateStr}T${editData.checkOut}:00`).toISOString() : undefined,
       });
-      
-      // Close modal on success
+
       handleCloseEditModal();
-      
-      // Show success message
       alert('Attendance updated successfully!');
-    } catch (error) {
-      console.error('Failed to update attendance:', error);
+    } catch {
       alert('Failed to update attendance. Please try again.');
     }
-  }, [editingRecord, updateAttendance, handleCloseEditModal]);
+  }, [editingRecord, handleCloseEditModal]);
 
-  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+  const handleApplyFilters = useCallback(() => {
+    setFilters((prev) => ({ ...prev, page: 1 }));
   }, []);
 
-  const handleStartDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setStartDate(e.target.value);
-  }, []);
-
-  const handleEndDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setEndDate(e.target.value);
-  }, []);
-
-  // Filter data locally based on search and date range
-  const filteredData = useMemo(() => {
-    if (!data?.records) return [];
-
-    return data.records.filter((record: AttendanceRecord) => {
-      // Search filter by user name
-      if (searchQuery && !record.user.name.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-      
-      // Date range filter
-      const recordDate = new Date(record.clockIn);
-      recordDate.setHours(0, 0, 0, 0);
-      
-      if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        if (recordDate < start) return false;
-      }
-      
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        if (recordDate > end) return false;
-      }
-      
-      return true;
-    });
-  }, [data?.records, searchQuery, startDate, endDate]);
-
-  // Clear filters
   const handleClearFilters = useCallback(() => {
-    setSearchQuery('');
     setStartDate('');
     setEndDate('');
+    setSelectedUserId('');
+    setSearchQuery('');
+    setFilters({ page: 1, pageSize: DEFAULT_PAGE_SIZE });
   }, []);
+
+  // Check if any filter is active
+  const hasActiveFilters = startDate || endDate;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">Attendance Records</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Riwayat Attendance</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Lihat semua data attendance dari semua user (Admin)
+            Filter <strong>per tanggal</strong> dan <strong>per user</strong>
           </p>
         </div>
 
@@ -163,66 +188,121 @@ export default function AttendanceHistoryPage() {
           </div>
         )}
 
-        {/* Filters */}
+        {/* Filters - Server-side */}
         <div className="mb-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">🔍 Filter Server-side</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search Input */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cari Nama Karyawan
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearch}
-                  placeholder="Masukkan nama karyawan..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                />
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-            </div>
-
             {/* Start Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tanggal Mulai
+                📅 Tanggal Mulai
               </label>
               <input
                 type="date"
                 value={startDate}
-                onChange={handleStartDateChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
               />
             </div>
 
             {/* End Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tanggal Akhir
+                📅 Tanggal Akhir
               </label>
               <input
                 type="date"
                 value={endDate}
-                onChange={handleEndDateChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
               />
+            </div>
+
+            {/* User Search with Dropdown */}
+            <div className="md:col-span-1 relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                👤 Cari User
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                  placeholder="Ketik nama (min 2 huruf)..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                />
+                {selectedUserId && (
+                  <button
+                    onClick={handleClearUser}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    title="Hapus filter user"
+                  >
+                    ✕
+                  </button>
+                )}
+                {isSearching && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              {/* Dropdown Results */}
+              {showDropdown && searchResults.length > 0 && (
+                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {searchResults.map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={() => handleSelectUser(user)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                    >
+                      <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500">{user.email} • {user.role}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Apply Button */}
+            <div className="flex items-end">
+              <button
+                onClick={handleApplyFilters}
+                className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                🔍 Terapkan Filter
+              </button>
             </div>
           </div>
 
-          {/* Clear Filters Button */}
-          {(searchQuery || startDate || endDate) && (
-            <div className="mt-4 flex justify-end">
+          {/* Active Filters Indicator */}
+          {hasActiveFilters && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {startDate && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                  📅 Dari: {startDate}
+                </span>
+              )}
+              {endDate && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                  📅 Sampai: {endDate}
+                </span>
+              )}
+              {selectedUserId && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                  👤 {searchQuery}
+                </span>
+              )}
               <button
                 onClick={handleClearFilters}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full hover:bg-gray-200"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Clear Filters
+                ✕ Hapus Semua
               </button>
             </div>
           )}
@@ -230,15 +310,16 @@ export default function AttendanceHistoryPage() {
           {/* Results count */}
           <div className="mt-4 pt-4 border-t border-gray-200">
             <p className="text-sm text-gray-600">
-              Menampilkan <span className="font-semibold text-gray-900">{filteredData.length}</span> dari{' '}
-              <span className="font-semibold text-gray-900">{data?.records?.length || 0}</span> total records
+              Menampilkan <span className="font-semibold text-gray-900">{data?.records?.length || 0}</span>{' '}
+              {hasActiveFilters ? '(terfilter) ' : ''}
+              dari total <span className="font-semibold text-gray-900">{data?.pagination?.total || 0}</span> records
             </p>
           </div>
         </div>
 
         {/* Table */}
         <AttendanceDailyTable
-          data={filteredData}
+          data={data?.records || []}
           isLoading={isLoading}
           onViewDetails={handleViewDetails}
           onEdit={handleEdit}
@@ -281,7 +362,7 @@ export default function AttendanceHistoryPage() {
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
         onSave={handleSaveEdit}
-        isLoading={updateAttendance.isPending}
+        isLoading={false}
       />
     </div>
   );

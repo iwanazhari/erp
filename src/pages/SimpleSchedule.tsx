@@ -97,11 +97,11 @@ export default function SimpleSchedule() {
     setEditingId(schedule.id);
     setFormData({
       technicianId: getPrimarySalesUserIdFromSchedule(schedule),
-      locationId: schedule.location.id,
-      locationName: schedule.location.name,
-      locationAddress: schedule.location.address,
-      latitude: schedule.location.latitude,
-      longitude: schedule.location.longitude,
+      locationId: schedule.location?.id || '',
+      locationName: schedule.location?.name || '',
+      locationAddress: schedule.location?.address || '',
+      latitude: schedule.location?.latitude || 0,
+      longitude: schedule.location?.longitude || 0,
       date: schedule.date.split('T')[0],
       startTime: schedule.startTime.split('T')[1].slice(0, 5),
       endTime: schedule.endTime.split('T')[1].slice(0, 5),
@@ -124,6 +124,10 @@ export default function SimpleSchedule() {
 
       // Step 1: Create new location if doesn't exist
       if (!formData.locationId) {
+        if (!formData.latitude || !formData.longitude) {
+          toast.error('Lokasi harus diisi dari Google Maps. Tempel link Google Maps untuk mengisi koordinat.');
+          return;
+        }
         const locationData = {
           name: formData.locationName,
           address: formData.locationAddress,
@@ -140,12 +144,13 @@ export default function SimpleSchedule() {
       }
 
       // Step 2: Create/Update schedule with locationId
+      // Backend expects: date (YYYY-MM-DD), startTime (HH:mm), endTime (HH:mm)
       const payload: CreateScheduleInput | UpdateScheduleInput = {
         salesIds: [formData.technicianId!],
         locationId: locationId,
-        date: new Date(formData.date!).toISOString(),
-        startTime: new Date(`${formData.date}T${formData.startTime}`).toISOString(),
-        endTime: new Date(`${formData.date}T${formData.endTime}`).toISOString(),
+        date: formData.date, // YYYY-MM-DD format (backend concatenates: date + 'T' + startTime)
+        startTime: formData.startTime,
+        endTime: formData.endTime,
         description: formData.description,
         notes: formData.notes,
       };
@@ -399,11 +404,11 @@ export default function SimpleSchedule() {
                 schedules.map((schedule: any) => (
                   <tr key={schedule.id} className="hover:bg-slate-50">
                     <td className="px-4 py-3 text-sm">{getScheduleAssigneeDisplay(schedule).name}</td>
-                    <td className="px-4 py-3 text-sm">{schedule.location.name}</td>
+                    <td className="px-4 py-3 text-sm">{schedule.location?.name || '---'}</td>
                     <td className="px-4 py-3 text-sm">
-                      <div>{new Date(schedule.date).toLocaleDateString('id-ID')}</div>
+                      <div>{new Date(schedule.date).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}</div>
                       <div className="text-slate-500 text-xs">
-                        {schedule.startTime.split('T')[1].slice(0, 5)} - {schedule.endTime.split('T')[1].slice(0, 5)}
+                        {new Date(schedule.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} - {new Date(schedule.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}
                       </div>
                     </td>
                     <td className="px-4 py-3">

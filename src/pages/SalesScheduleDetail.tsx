@@ -59,6 +59,7 @@ export default function SalesScheduleDetail() {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: 'Asia/Jakarta',
     });
   };
 
@@ -67,6 +68,7 @@ export default function SalesScheduleDetail() {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
+      timeZone: 'Asia/Jakarta',
     });
   };
 
@@ -135,14 +137,15 @@ export default function SalesScheduleDetail() {
           {/* Location */}
           <div>
             <h3 className="text-sm font-medium text-slate-500 mb-2">Lokasi</h3>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <p className="font-medium text-slate-900">{schedule.location.name}</p>
-              <p className="text-sm text-slate-600 mt-1">{schedule.location.address}</p>
-              <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
-                <span>Lat: {schedule.location.latitude}</span>
-                <span>Lng: {schedule.location.longitude}</span>
-                {schedule.location.radius && <span>Radius: {schedule.location.radius}m</span>}
-              </div>
+            {schedule.location ? (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="font-medium text-slate-900">{schedule.location.name}</p>
+                <p className="text-sm text-slate-600 mt-1">{schedule.location.address}</p>
+                <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
+                  <span>Lat: {schedule.location.latitude}</span>
+                  <span>Lng: {schedule.location.longitude}</span>
+                  {schedule.location.radius && <span>Radius: {schedule.location.radius}m</span>}
+                </div>
               <a
                 href={`https://www.google.com/maps?q=${schedule.location.latitude},${schedule.location.longitude}`}
                 target="_blank"
@@ -152,6 +155,9 @@ export default function SalesScheduleDetail() {
                 Buka di Google Maps →
               </a>
             </div>
+            ) : (
+              <p className="text-sm text-slate-500">Tidak ada lokasi</p>
+            )}
           </div>
 
           {/* Participants */}

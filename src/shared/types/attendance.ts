@@ -210,3 +210,141 @@ export interface ApiResponse<T> {
   message?: string;
   data: T;
 }
+
+// ==================== Monthly Grid Report Types ====================
+
+export interface MonthlyGridDay {
+  day: number;
+  date: string;
+  minggu?: boolean;
+  liburPerusahaan?: boolean;
+  jamMasuk: string | null;
+  jamKeluar: string | null;
+  status?: string;
+  terlambat: boolean;
+  alpa?: boolean;
+  leave?: boolean;
+  leaveCategory?: string;
+  leavePending?: boolean;
+  belumBerlaku?: boolean;
+  jamMasukHighlight?: string | null;
+  terlambatMerah?: boolean;
+  label?: string;
+}
+
+export interface MonthlyGridTotals {
+  tHadir: number;
+  tAlpa: number;
+  tTelat: number;
+  sid: number;
+  cuti: number;
+  percentKehadiran: number;
+}
+
+export interface MonthlyGridBalance {
+  sisaCuti: number;
+  sisaSid: number;
+  cutiQuotaYtd: number;
+  sidQuotaYtd: number;
+  cutiTakenYtd: number;
+  sidTakenYtd: number;
+}
+
+export interface MonthlyGridUser {
+  no: number;
+  userId: string;
+  name: string;
+  email: string;
+  jabatan: string;
+  days: MonthlyGridDay[];
+  totals: MonthlyGridTotals;
+  balance: MonthlyGridBalance;
+}
+
+export interface MonthlyGridMeta {
+  workingDaysForPercent: number;
+  cutiQuotaYtd: number;
+  sidQuotaYtd: number;
+  cutiQuotaNote: string;
+  sidNote: string;
+  percentNote: string;
+}
+
+export interface MonthlyGridData {
+  year: number;
+  month: number;
+  workingDaysInMonth: number;
+  page: number;
+  pageSize: number;
+  totalUsers: number;
+  totalPages: number;
+  users: MonthlyGridUser[];
+  meta: MonthlyGridMeta;
+}
+
+export interface MonthlyGridFilters {
+  companyId?: string;
+  year?: number;
+  month?: number;
+  q?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+// ==================== Deferred Payment Report Types ====================
+
+export interface DeferredPaymentItem {
+  transactionId: string;
+  attendanceId: string;
+  scheduleId: string;
+  technicianName: string;
+  technicianPhone: string | null;
+  technicianEmail: string | null;
+  location: string;
+  locationAddress: string | null;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  originalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  deferredAt: string;
+  dueDate: string;
+  daysOverdue: number;
+  followUpCount: number;
+  lastFollowUpAt: string | null;
+  reminderSent: boolean | null;
+  lastReminderSent: string | null;
+  escalated: boolean | null;
+  escalatedTo: string | null;
+  deferReason: string | null;
+}
+
+export interface DeferredPaymentSummary {
+  total: number;
+  overdueCount: number;
+  totalRemainingAmount: number;
+  totalPaidAmount: number;
+  averageDeferredAmount: number;
+}
+
+export interface DeferredPaymentData {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  overdueCount: number;
+  totalRemainingAmount: number;
+  items: DeferredPaymentItem[];
+}
+
+export interface DeferredPaymentFilters {
+  status?: string;
+  overdue?: boolean;
+  fromDate?: string;
+  toDate?: string;
+  technicianId?: string;
+  companyId?: string;
+  page?: number;
+  pageSize?: number;
+}

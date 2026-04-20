@@ -33,16 +33,16 @@ export function exportSchedulesToCSV(schedules: Schedule[], filename = 'schedule
       `"${scheduleKindLabel(assignee.kind)}"`,
       `"${assignee.name}"`,
       `"${assignee.email ?? ''}"`,
-      `"${schedule.location.name}"`,
-      `"${schedule.location.address}"`,
-      new Date(schedule.date).toLocaleDateString('id-ID'),
-      new Date(schedule.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-      new Date(schedule.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      `"${schedule.location?.name || ''}"`,
+      `"${schedule.location?.address || ''}"`,
+      new Date(schedule.date).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }),
+      new Date(schedule.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
+      new Date(schedule.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
       duration,
       schedule.status,
       `"${schedule.description || ''}"`,
       `"${schedule.notes || ''}"`,
-      new Date(schedule.createdAt).toLocaleString('id-ID'),
+      new Date(schedule.createdAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }),
     ];
   });
 

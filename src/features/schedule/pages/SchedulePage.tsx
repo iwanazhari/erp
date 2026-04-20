@@ -39,8 +39,19 @@ export default function SchedulePage() {
   const cancelMutation = useCancelSchedule();
   const deleteMutation = useDeleteSchedule();
 
-  const schedules = useMemo(() => schedulesData?.data || [], [schedulesData]);
-  const locations = useMemo(() => locationsData?.data || [], [locationsData]);
+  const schedules = useMemo(() => {
+    const raw = schedulesData?.data as any;
+    // Backend returns: { data: { data: [...], pagination: {...} } }
+    if (raw && Array.isArray(raw.data)) return raw.data as Schedule[];
+    if (Array.isArray(raw)) return raw as Schedule[];
+    return [];
+  }, [schedulesData]);
+  const locations = useMemo(() => {
+    const raw = locationsData?.data as any;
+    if (raw && Array.isArray(raw.data)) return raw.data as Location[];
+    if (Array.isArray(raw)) return raw as Location[];
+    return [];
+  }, [locationsData]);
 
   const handleCreateClick = () => {
     setSelectedSchedule(null);
@@ -167,7 +178,7 @@ export default function SchedulePage() {
           <ScheduleFilters
             filters={filters}
             onFilterChange={handleFilterChange}
-            locations={locations.map((loc) => ({ id: loc.id, name: loc.name }))}
+            locations={(locations as any[]).map((loc: any) => ({ id: loc.id, name: loc.name }))}
           />
         </Card>
 

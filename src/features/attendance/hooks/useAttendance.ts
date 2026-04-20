@@ -7,6 +7,8 @@ import type {
 } from '@/shared/types/attendance';
 
 export { useAttendanceExport } from './useAttendanceExport';
+export { useMonthlyGridReport } from './useMonthlyGridReport';
+export { useDeferredPaymentReport, useDeferredPaymentSummary } from './useDeferredPaymentReport';
 
 /**
  * Attendance Query Keys Factory

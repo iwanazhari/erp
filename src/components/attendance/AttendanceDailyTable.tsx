@@ -28,7 +28,7 @@ export default function AttendanceDailyTable({
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const day = date.getDate();
-    const month = date.toLocaleDateString('id-ID', { month: 'long' });
+    const month = date.toLocaleDateString('id-ID', { month: 'long', timeZone: 'Asia/Jakarta' });
     const year = date.getFullYear();
     return `${day} ${month} ${year}`;
   };
@@ -39,6 +39,7 @@ export default function AttendanceDailyTable({
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
+      timeZone: 'Asia/Jakarta',
     });
   };
 

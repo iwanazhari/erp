@@ -3,9 +3,9 @@ import TimePicker24 from '@/components/ui/TimePicker24';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import type { User } from '@/modules/auth/types';
-import type { User as ScheduleUser, Location } from '@/shared/types/schedule';
+import type { User as ScheduleUser } from '@/shared/types/schedule';
 import { urlParserService } from '@/services/urlParserService';
-import { useScheduleSalesUsers, useLocations } from '@/features/schedule/hooks/useSchedules';
+import { useScheduleSalesUsers } from '@/features/schedule/hooks/useSchedules';
 
 export type SalesScheduleFormData = {
   /** IDs user berperan SALES yang dijadwalkan (support multiple). */
@@ -55,9 +55,6 @@ export default function SalesScheduleForm({
 
   const { data: salesUsersRes, isLoading: loadingSales } = useScheduleSalesUsers();
   const salesUsers: ScheduleUser[] = salesUsersRes?.data ?? [];
-
-  const { data: locationsRes, isLoading: loadingLocations } = useLocations({ isActive: true });
-  const locations: Location[] = locationsRes?.data ?? [];
 
   const [salesSearch, setSalesSearch] = useState('');
   const [salesListOpen, setSalesListOpen] = useState(false);
@@ -140,20 +137,6 @@ export default function SalesScheduleForm({
           : [...prev.salesIds, salesId],
       };
     });
-  };
-
-  const handleLocationSelect = (locationId: string) => {
-    const selectedLocation = locations.find((loc) => loc.id === locationId);
-    if (selectedLocation) {
-      setFormData((prev) => ({
-        ...prev,
-        locationId: selectedLocation.id,
-        locationName: selectedLocation.name,
-        locationAddress: selectedLocation.address,
-        latitude: selectedLocation.latitude,
-        longitude: selectedLocation.longitude,
-      }));
-    }
   };
 
   const selectedSalesCount = formData.salesIds.length;
@@ -284,30 +267,31 @@ export default function SalesScheduleForm({
           </div>
         </div>
 
-        {/* Location Selection */}
+        {/* Location Manual Input */}
         <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-3">
           <label className="mb-1 block text-sm font-medium text-slate-700">
             Lokasi <span className="text-red-500">*</span>
           </label>
-          <select
-            value={formData.locationId || ''}
-            onChange={(e) => handleLocationSelect(e.target.value)}
-            className="app-input w-full"
-            required
-          >
-            <option value="">Pilih lokasi yang sudah ada...</option>
-            {loadingLocations ? (
-              <option disabled>Loading...</option>
-            ) : (
-              locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name} — {loc.address}
-                </option>
-              ))
-            )}
-          </select>
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={formData.locationName}
+              onChange={(e) => setFormData({ ...formData, locationName: e.target.value, locationId: undefined })}
+              className="app-input w-full"
+              placeholder="Nama lokasi (cth: Kantor Client ABC)"
+              required
+            />
+            <input
+              type="text"
+              value={formData.locationAddress}
+              onChange={(e) => setFormData({ ...formData, locationAddress: e.target.value, locationId: undefined })}
+              className="app-input w-full"
+              placeholder="Alamat lengkap lokasi"
+              required
+            />
+          </div>
           <p className="mt-1 text-xs text-slate-500">
-            Pilih lokasi existing atau gunakan Google Maps untuk membuat lokasi baru.
+            Ketik nama dan alamat lokasi secara manual, atau gunakan Google Maps untuk otomatis mengisi koordinat.
           </p>
         </div>
 

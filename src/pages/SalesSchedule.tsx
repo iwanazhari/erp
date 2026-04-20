@@ -123,14 +123,14 @@ export default function SalesSchedule() {
 
     setFormData({
       salesIds,
-      locationId: schedule.location.id,
-      locationName: schedule.location.name,
-      locationAddress: schedule.location.address,
-      latitude: schedule.location.latitude,
-      longitude: schedule.location.longitude,
-      date: schedule.date.split('T')[0],
-      startTime: schedule.startTime.split('T')[1].slice(0, 5),
-      endTime: schedule.endTime.split('T')[1].slice(0, 5),
+      locationId: schedule.location?.id || '',
+      locationName: schedule.location?.name || '',
+      locationAddress: schedule.location?.address || '',
+      latitude: schedule.location?.latitude || 0,
+      longitude: schedule.location?.longitude || 0,
+      date: new Date(schedule.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }),
+      startTime: new Date(schedule.startTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
+      endTime: new Date(schedule.endTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
       description: schedule.description || '',
       notes: schedule.notes || '',
     });
@@ -145,19 +145,23 @@ export default function SalesSchedule() {
       return;
     }
 
-    if (!formData.locationId && (!formData.latitude || !formData.longitude)) {
-      toast.error('Pilih lokasi atau ambil koordinat dari link Google Maps terlebih dahulu.');
+    if (!formData.locationName.trim() || !formData.locationAddress.trim()) {
+      toast.error('Nama dan alamat lokasi harus diisi.');
       return;
     }
 
     try {
       let locationId = formData.locationId;
 
-      // Step 1: Create new location if doesn't exist and coordinates provided
-      if (!locationId && formData.latitude && formData.longitude) {
-        const locationData = {
-          name: formData.locationName,
-          address: formData.locationAddress,
+      // Step 1: Create new location if doesn't exist
+      if (!locationId) {
+        if (!formData.latitude || !formData.longitude) {
+          toast.error('Lokasi harus diisi dari Google Maps. Tempel link Google Maps untuk mengisi koordinat.');
+          return;
+        }
+        const locationData: any = {
+          name: formData.locationName.trim(),
+          address: formData.locationAddress.trim(),
           latitude: formData.latitude,
           longitude: formData.longitude,
           isActive: true,
@@ -408,15 +412,15 @@ export default function SalesSchedule() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <div className="font-medium">{schedule.location.name}</div>
+                      <div className="font-medium">{schedule.location?.name || '---'}</div>
                       <div className="text-xs text-slate-500 truncate max-w-[200px]">
-                        {schedule.location.address}
+                        {schedule.location?.address || ''}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <div>{new Date(schedule.date).toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                      <div>{new Date(schedule.date).toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: 'Asia/Jakarta' })}</div>
                       <div className="text-slate-500 text-xs">
-                        {schedule.startTime.split('T')[1].slice(0, 5)} - {schedule.endTime.split('T')[1].slice(0, 5)}
+                        {new Date(schedule.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} - {new Date(schedule.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}
                       </div>
                     </td>
                     <td className="px-4 py-3">

@@ -17,6 +17,7 @@ export function AttendanceHistoryTable({
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      timeZone: 'Asia/Jakarta',
     });
   };
 
@@ -24,6 +25,7 @@ export function AttendanceHistoryTable({
     return new Date(dateString).toLocaleTimeString('id-ID', {
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'Asia/Jakarta',
     });
   };
 
