@@ -1,25 +1,30 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useAttendanceRecords } from '@/features/attendance/hooks/useAttendance';
-import { userApi } from '@/services/userApi';
-import type { UserOption } from '@/services/userApi';
 import {
   AttendanceDailyTable,
   AttendanceDetailsModal,
   AttendanceEditModal,
 } from '@/features/attendance/components';
+import CreateManualAttendanceModal from '@/features/attendance/components/CreateManualAttendanceModal';
 import type { AttendanceRecordsFilters, AttendanceRecord } from '@/shared/types/attendance';
 
-const DEFAULT_PAGE_SIZE = 50;
+const DEFAULT_PAGE_SIZE = 100;
 
-/**
- * Attendance History Page Component
- *
- * Displays ALL attendance records with server-side filtering:
- * - **Filter per tanggal**: startDate & endDate (passed to API)
- * - **Filter per user**: userId (passed to API)
- *
- * Uses GET /api/attendance/records endpoint (ADMIN only - no companyId filter).
- */
+function getTodayInIndonesia(): string {
+  const now = new Date();
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'Asia/Jakarta',
+  };
+  const parts = new Intl.DateTimeFormat('id-ID', options).formatToParts(now);
+  const year = parts.find((p) => p.type === 'year')?.value || '';
+  const month = parts.find((p) => p.type === 'month')?.value || '';
+  const day = parts.find((p) => p.type === 'day')?.value || '';
+  return `${year}-${month}-${day}`;
+}
+
 export default function AttendanceHistoryPage() {
   const [filters, setFilters] = useState<AttendanceRecordsFilters>({
     page: 1,
@@ -29,84 +34,36 @@ export default function AttendanceHistoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // Server-side filters (passed to API)
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [selectedUserId, setSelectedUserId] = useState('');
+  const today = getTodayInIndonesia();
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
 
-  // User search
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<UserOption[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  // Debounced user search
-  const searchTimeout = useMemo(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    return (query: string) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(async () => {
-        if (query.trim().length >= 2) {
-          setIsSearching(true);
-          try {
-            const response = await userApi.searchUsers(query.trim());
-            setSearchResults(response.data.users || []);
-            setShowDropdown(true);
-          } catch {
-            setSearchResults([]);
-          } finally {
-            setIsSearching(false);
-          }
-        } else {
-          setSearchResults([]);
-          setShowDropdown(false);
-        }
-      }, 400);
-      return timeoutId;
-    };
-  }, []);
-
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    searchTimeout(value);
-  }, [searchTimeout]);
-
-  const handleSelectUser = useCallback((user: UserOption) => {
-    setSelectedUserId(user.id);
-    setSearchQuery(user.name);
-    setShowDropdown(false);
-  }, []);
-
-  const handleClearUser = useCallback(() => {
-    setSelectedUserId('');
-    setSearchQuery('');
-    setSearchResults([]);
-    setShowDropdown(false);
-  }, []);
-
-  // Build server-side filters for /attendance/records
   const apiFilters = useMemo<AttendanceRecordsFilters>(() => {
-    const f: AttendanceRecordsFilters = {
+    return {
       page: filters.page,
       pageSize: filters.pageSize,
+      startDate: startDate,
+      endDate: endDate,
     };
-
-    if (startDate) f.startDate = startDate;
-    if (endDate) f.endDate = endDate;
-
-    return f;
   }, [filters.page, filters.pageSize, startDate, endDate]);
 
-  const {
-    data,
-    isLoading,
-    error,
-  } = useAttendanceRecords(apiFilters);
+  const { data, isLoading, error } = useAttendanceRecords(apiFilters);
 
   const handlePageChange = useCallback((page: number) => {
     setFilters((prev) => ({ ...prev, page }));
+  }, []);
+
+  const handleApplyFilters = useCallback(() => {
+    setFilters((prev) => ({ ...prev, page: 1 }));
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    const today = getTodayInIndonesia();
+    setStartDate(today);
+    setEndDate(today);
+    setFilters({ page: 1, pageSize: DEFAULT_PAGE_SIZE });
   }, []);
 
   const handleViewDetails = useCallback((record: AttendanceRecord) => {
@@ -129,8 +86,28 @@ export default function AttendanceHistoryPage() {
     setEditingRecord(null);
   }, []);
 
+  const handleCreateAttendance = useCallback(() => {
+    setIsCreateModalOpen(true);
+  }, []);
+
+  const handleCloseCreateModal = useCallback(() => {
+    setIsCreateModalOpen(false);
+  }, []);
+
+  const handleCreateSuccess = useCallback(() => {
+    setFilters((prev) => ({ ...prev, page: 1 }));
+  }, []);
+
   const handleSaveEdit = useCallback(async (editData: { checkIn: string; checkOut: string; status: string; editReason: string }) => {
-    if (!editingRecord) return;
+    if (!editingRecord) {
+      alert('Tidak ada data attendance yang dipilih untuk diedit.');
+      return;
+    }
+
+    if (!editingRecord.id) {
+      alert('ID attendance tidak ditemukan. Untuk user yang belum absen, gunakan tombol "Buat Absensi Manual".');
+      return;
+    }
 
     try {
       const clockInDate = new Date(editingRecord.clockIn);
@@ -139,7 +116,6 @@ export default function AttendanceHistoryPage() {
       const day = clockInDate.getDate().toString().padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
 
-      // Use privateApi directly for the update
       const { privateApi } = await import('@/services/authApi');
       await privateApi.put(`/attendance/${editingRecord.id}`, {
         status: editData.status,
@@ -150,174 +126,98 @@ export default function AttendanceHistoryPage() {
 
       handleCloseEditModal();
       alert('Attendance updated successfully!');
-    } catch {
-      alert('Failed to update attendance. Please try again.');
+    } catch (error: any) {
+      console.error('Error updating attendance:', error);
+      const errorMessage = error?.response?.data?.message || 'Failed to update attendance. Please try again.';
+      alert(`Error: ${errorMessage}`);
     }
   }, [editingRecord, handleCloseEditModal]);
-
-  const handleApplyFilters = useCallback(() => {
-    setFilters((prev) => ({ ...prev, page: 1 }));
-  }, []);
-
-  const handleClearFilters = useCallback(() => {
-    setStartDate('');
-    setEndDate('');
-    setSelectedUserId('');
-    setSearchQuery('');
-    setFilters({ page: 1, pageSize: DEFAULT_PAGE_SIZE });
-  }, []);
-
-  // Check if any filter is active
-  const hasActiveFilters = startDate || endDate;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">Riwayat Attendance</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Filter <strong>per tanggal</strong> dan <strong>per user</strong>
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Menampilkan <strong>semua user</strong> dengan data attendance
+              </p>
+            </div>
+            <button
+              onClick={handleCreateAttendance}
+              className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors flex items-center gap-2"
+              title="Buat record attendance untuk user yang belum absen karena masalah teknis"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Buat Absensi Manual
+            </button>
+          </div>
         </div>
 
-        {/* Error State */}
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-sm text-red-600">{error instanceof Error ? error.message : 'Terjadi kesalahan'}</p>
           </div>
         )}
 
-        {/* Filters - Server-side */}
         <div className="mb-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">🔍 Filter Server-side</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-700">📅 Filter Tanggal</h3>
+            <p className="text-xs text-gray-500">Default: hari ini</p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Start Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                📅 Tanggal Mulai
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Mulai</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
               />
             </div>
-
-            {/* End Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                📅 Tanggal Akhir
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Akhir</label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
               />
             </div>
-
-            {/* User Search with Dropdown */}
-            <div className="md:col-span-1 relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                👤 Cari User
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                  placeholder="Ketik nama (min 2 huruf)..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                />
-                {selectedUserId && (
-                  <button
-                    onClick={handleClearUser}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    title="Hapus filter user"
-                  >
-                    ✕
-                  </button>
-                )}
-                {isSearching && (
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                    <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-
-              {/* Dropdown Results */}
-              {showDropdown && searchResults.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {searchResults.map((user) => (
-                    <button
-                      key={user.id}
-                      onClick={() => handleSelectUser(user)}
-                      className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                    >
-                      <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                      <p className="text-xs text-gray-500">{user.email} • {user.role}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Apply Button */}
-            <div className="flex items-end">
-              <button
-                onClick={handleApplyFilters}
-                className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                🔍 Terapkan Filter
+            <div className="flex items-end gap-2 md:col-span-2">
+              <button onClick={handleApplyFilters} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                Terapkan Filter
+              </button>
+              <button onClick={handleClearFilters} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                Reset ke Hari Ini
               </button>
             </div>
           </div>
-
-          {/* Active Filters Indicator */}
-          {hasActiveFilters && (
+          {(startDate !== today || endDate !== today) && (
             <div className="mt-4 flex flex-wrap gap-2">
-              {startDate && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                  📅 Dari: {startDate}
-                </span>
-              )}
-              {endDate && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                  📅 Sampai: {endDate}
-                </span>
-              )}
-              {selectedUserId && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                  👤 {searchQuery}
-                </span>
-              )}
-              <button
-                onClick={handleClearFilters}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full hover:bg-gray-200"
-              >
-                ✕ Hapus Semua
-              </button>
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">
+                Dari: {startDate}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">
+                Sampai: {endDate}
+              </span>
             </div>
           )}
-
-          {/* Results count */}
           <div className="mt-4 pt-4 border-t border-gray-200">
             <p className="text-sm text-gray-600">
-              Menampilkan <span className="font-semibold text-gray-900">{data?.records?.length || 0}</span>{' '}
-              {hasActiveFilters ? '(terfilter) ' : ''}
-              dari total <span className="font-semibold text-gray-900">{data?.pagination?.total || 0}</span> records
+              Total <span className="font-semibold text-gray-900">{data?.records?.length || 0}</span> user
+              {data?.pagination && data.pagination.totalPages > 1 && (
+                <span className="ml-2 text-gray-500">
+                  (halaman {data.pagination.page} dari {data.pagination.totalPages}, total {data.pagination.total} records)
+                </span>
+              )}
             </p>
           </div>
         </div>
 
-        {/* Table */}
         <AttendanceDailyTable
           data={data?.records || []}
           isLoading={isLoading}
@@ -325,45 +225,30 @@ export default function AttendanceHistoryPage() {
           onEdit={handleEdit}
         />
 
-        {/* Pagination */}
         {data?.pagination && (
           <div className="mt-4 flex justify-center gap-2">
             <button
               onClick={() => handlePageChange(data.pagination!.page - 1)}
               disabled={data.pagination.page <= 1}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50"
             >
               Previous
             </button>
-            <span className="px-4 py-2 text-gray-700 flex items-center">
-              Page {data.pagination.page} of {data.pagination.totalPages}
-            </span>
+            <span className="px-4 py-2 text-gray-700">Page {data.pagination.page} of {data.pagination.totalPages}</span>
             <button
               onClick={() => handlePageChange(data.pagination!.page + 1)}
               disabled={data.pagination.page >= data.pagination.totalPages}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50"
             >
               Next
             </button>
           </div>
         )}
+
+        <AttendanceDetailsModal record={selectedRecord} isOpen={isModalOpen} onClose={handleCloseModal} />
+        <AttendanceEditModal record={editingRecord} isOpen={isEditModalOpen} onClose={handleCloseEditModal} onSave={handleSaveEdit} isLoading={false} />
+        <CreateManualAttendanceModal isOpen={isCreateModalOpen} onClose={handleCloseCreateModal} onSuccess={handleCreateSuccess} />
       </div>
-
-      {/* Details Modal */}
-      <AttendanceDetailsModal
-        record={selectedRecord}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
-
-      {/* Edit Modal */}
-      <AttendanceEditModal
-        record={editingRecord}
-        isOpen={isEditModalOpen}
-        onClose={handleCloseEditModal}
-        onSave={handleSaveEdit}
-        isLoading={false}
-      />
     </div>
   );
 }

@@ -9,9 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsersRouteImport } from './routes/users'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as OvertimeRouteImport } from './routes/overtime'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LeaveRouteImport } from './routes/leave'
 import { Route as CustomHolidaysRouteImport } from './routes/custom-holidays'
@@ -21,6 +24,16 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ScheduleSalesRouteImport } from './routes/schedule.sales'
 import { Route as ScheduleMyRouteImport } from './routes/schedule.my'
 
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
@@ -34,6 +47,11 @@ const ReportsRoute = ReportsRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OvertimeRoute = OvertimeRouteImport.update({
+  id: '/overtime',
+  path: '/overtime',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -84,9 +102,11 @@ export interface FileRoutesByFullPath {
   '/custom-holidays': typeof CustomHolidaysRoute
   '/leave': typeof LeaveRoute
   '/login': typeof LoginRoute
+  '/overtime': typeof OvertimeRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/users': typeof UsersRoute
   '/schedule/my': typeof ScheduleMyRoute
   '/schedule/sales': typeof ScheduleSalesRoute
 }
@@ -97,9 +117,11 @@ export interface FileRoutesByTo {
   '/custom-holidays': typeof CustomHolidaysRoute
   '/leave': typeof LeaveRoute
   '/login': typeof LoginRoute
+  '/overtime': typeof OvertimeRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/users': typeof UsersRoute
   '/schedule/my': typeof ScheduleMyRoute
   '/schedule/sales': typeof ScheduleSalesRoute
 }
@@ -111,9 +133,11 @@ export interface FileRoutesById {
   '/custom-holidays': typeof CustomHolidaysRoute
   '/leave': typeof LeaveRoute
   '/login': typeof LoginRoute
+  '/overtime': typeof OvertimeRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/users': typeof UsersRoute
   '/schedule/my': typeof ScheduleMyRoute
   '/schedule/sales': typeof ScheduleSalesRoute
 }
@@ -126,9 +150,11 @@ export interface FileRouteTypes {
     | '/custom-holidays'
     | '/leave'
     | '/login'
+    | '/overtime'
     | '/register'
     | '/reports'
     | '/schedule'
+    | '/users'
     | '/schedule/my'
     | '/schedule/sales'
   fileRoutesByTo: FileRoutesByTo
@@ -139,9 +165,11 @@ export interface FileRouteTypes {
     | '/custom-holidays'
     | '/leave'
     | '/login'
+    | '/overtime'
     | '/register'
     | '/reports'
     | '/schedule'
+    | '/users'
     | '/schedule/my'
     | '/schedule/sales'
   id:
@@ -152,9 +180,11 @@ export interface FileRouteTypes {
     | '/custom-holidays'
     | '/leave'
     | '/login'
+    | '/overtime'
     | '/register'
     | '/reports'
     | '/schedule'
+    | '/users'
     | '/schedule/my'
     | '/schedule/sales'
   fileRoutesById: FileRoutesById
@@ -166,13 +196,22 @@ export interface RootRouteChildren {
   CustomHolidaysRoute: typeof CustomHolidaysRoute
   LeaveRoute: typeof LeaveRoute
   LoginRoute: typeof LoginRoute
+  OvertimeRoute: typeof OvertimeRoute
   RegisterRoute: typeof RegisterRoute
   ReportsRoute: typeof ReportsRoute
   ScheduleRoute: typeof ScheduleRouteWithChildren
+  UsersRoute: typeof UsersRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/schedule': {
       id: '/schedule'
       path: '/schedule'
@@ -192,6 +231,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/overtime': {
+      id: '/overtime'
+      path: '/overtime'
+      fullPath: '/overtime'
+      preLoaderRoute: typeof OvertimeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -274,9 +320,11 @@ const rootRouteChildren: RootRouteChildren = {
   CustomHolidaysRoute: CustomHolidaysRoute,
   LeaveRoute: LeaveRoute,
   LoginRoute: LoginRoute,
+  OvertimeRoute: OvertimeRoute,
   RegisterRoute: RegisterRoute,
   ReportsRoute: ReportsRoute,
   ScheduleRoute: ScheduleRouteWithChildren,
+  UsersRoute: UsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

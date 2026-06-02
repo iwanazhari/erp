@@ -6,17 +6,23 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/ToastContext';
 import { useHolidays } from '@/features/calendar/hooks/useHolidays';
-import {
-  useCreateCustomHoliday,
-  useDeleteCustomHoliday,
-} from '@/features/calendar/hooks/useCustomHolidays';
+import { customHolidayApi } from '@/services/calendarApi';
 import type { Holiday, CreateCustomHolidayInputFull, CustomHolidayTypeLabel } from '@/shared/types/customHoliday';
 import { CUSTOM_HOLIDAY_TYPE_LABELS, CUSTOM_HOLIDAY_TYPE_VALUES } from '@/shared/types/customHoliday';
 
 // Tile content component to show holiday indicator
 function HolidayTile({ date, holidays }: { date: Date; holidays: Holiday[] }) {
-  const dateStr = date.toISOString().split('T')[0];
-  const holiday = holidays.find(h => h.date === dateStr);
+  // Get date string in LOCAL timezone (not UTC)
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}`;
+
+  // Match by date part only (ignore time component)
+  // Skip holidays with overrideNationalHoliday = true (working day override)
+  const holiday = holidays.find(h => 
+    h.date.startsWith(dateStr) && !h.overrideNationalHoliday
+  );
 
   if (!holiday) return null;
 
@@ -25,9 +31,11 @@ function HolidayTile({ date, holidays }: { date: Date; holidays: Holiday[] }) {
   return (
     <div
       className={`mt-1 w-full cursor-help truncate px-1 text-xs font-semibold ${
-        isCustom ? 'text-slate-600' : 'text-indigo-700'
+        isCustom
+          ? 'text-slate-700 bg-slate-200 rounded px-1'  // Custom: Darker with background
+          : 'text-indigo-700'  // National: Indigo
       }`}
-      title={holiday.descriptionId ? `${holiday.nameId} - ${holiday.descriptionId}` : holiday.nameId}
+      title={`${holiday.nameId}${holiday.descriptionId ? ' - ' + holiday.descriptionId : ''} (${isCustom ? 'Custom' : 'Nasional'})`}
     >
       {holiday.nameId}
     </div>
@@ -39,6 +47,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewYear, setViewYear] = useState<number>(new Date().getFullYear());
   const [showAddForm, setShowAddForm] = useState(false);
+  const [togglingDate, setTogglingDate] = useState<string | null>(null);
 
   // Form state
   const [customDate, setCustomDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -46,16 +55,89 @@ export default function CalendarPage() {
   const [customDescription, setCustomDescription] = useState<string>('');
   const [customTypeLabel, setCustomTypeLabel] = useState<CustomHolidayTypeLabel>('Cuti Bersama');
 
-  const { data: holidaysData, isLoading, error } = useHolidays(viewYear);
+  const { data: holidaysData, isLoading, error, refetch } = useHolidays(viewYear);
   const holidays = holidaysData?.holidays || [];
 
-  const createMutation = useCreateCustomHoliday();
-  const deleteMutation = useDeleteCustomHoliday();
+  console.log('[Calendar] Holidays loaded:', holidays.length);
+  console.log('[Calendar] Holidays:', holidays.map(h => ({ date: h.date, name: h.name, override: h.overrideNationalHoliday })));
 
-  // Get holiday for a specific date
+  // Get holiday for a date (skip working day overrides)
   const getHolidayForDate = (date: Date): Holiday | undefined => {
-    const dateStr = date.toISOString().split('T')[0];
-    return holidays.find(h => h.date === dateStr);
+    // Get date string in LOCAL timezone (not UTC)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    // Match by date part only (ignore time component)
+    // Skip holidays with overrideNationalHoliday = true (working day override)
+    return holidays.find(h => 
+      h.date.startsWith(dateStr) && !h.overrideNationalHoliday
+    );
+  };
+
+  // Toggle working day / holiday
+  const handleToggleWorkingDay = async (date: string, isHoliday: boolean) => {
+    // Ensure date is in YYYY-MM-DD format
+    const dateObj = new Date(date);
+    const formattedDate = dateObj.toISOString().split('T')[0];
+
+    // Check if this is a national holiday
+    const nationalHoliday = getHolidayForDate(dateObj);
+    const isNationalHoliday = nationalHoliday && !nationalHoliday.isCustom;
+
+    console.log('Toggle:', {
+      date: formattedDate,
+      isHoliday,
+      isNationalHoliday,
+      nationalHoliday: nationalHoliday?.name,
+      action: isHoliday ? 'Holiday → Work' : 'Work → Holiday'
+    });
+
+    if (isHoliday) {
+      if (!confirm('Ubah tanggal ini menjadi hari kerja? Tanggal libur akan dihapus.')) return;
+    } else {
+      if (!confirm('Ubah tanggal ini menjadi hari libur?')) return;
+    }
+
+    setTogglingDate(formattedDate);
+    try {
+      // Send correct payload based on holiday type
+      const payload: any = {
+        date: formattedDate,
+        type: 'LIBUR_PERUSAHAAN',
+      };
+
+      // If it's a national holiday, we're creating a working day override
+      if (isNationalHoliday) {
+        payload.name = `Working Day: ${nationalHoliday?.name}`;
+        payload.description = `${nationalHoliday?.name} dijadikan hari kerja`;
+        payload.isWorkingDayOverride = true; // IMPORTANT!
+        console.log('[Toggle] Sending working day override payload:', payload);
+      } else {
+        // Regular toggle
+        payload.name = isHoliday ? undefined : 'Libur Perusahaan';
+        payload.description = isHoliday ? undefined : 'Libur perusahaan';
+        console.log('[Toggle] Sending regular toggle payload:', payload);
+      }
+
+      const response = await customHolidayApi.toggleWorkingDay(payload);
+
+      console.log('Toggle response:', response);
+
+      toast.success(isHoliday ? 'Tanggal berhasil diubah menjadi hari kerja' : 'Tanggal berhasil diubah menjadi hari libur');
+      
+      // Force refetch holidays to refresh calendar immediately
+      console.log('[Toggle] Refetching holidays...');
+      await refetch();
+      console.log('[Toggle] Refetch complete');
+    } catch (error: any) {
+      console.error('Toggle error:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.message || error.response?.data || 'Gagal toggle tanggal');
+    } finally {
+      setTogglingDate(null);
+    }
   };
 
   // Check if date is a holiday
@@ -72,7 +154,7 @@ export default function CalendarPage() {
   // Handle add custom holiday
   const handleAddCustomHoliday = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!customName.trim() || !customDescription.trim()) {
       toast.error('Nama dan alasan hari libur wajib diisi');
       return;
@@ -81,27 +163,35 @@ export default function CalendarPage() {
     const holidayData: CreateCustomHolidayInputFull = {
       date: customDate,
       name: customName,
-      name_id: customName, // Use same name for Indonesian
+      name_id: customName,
       description: customDescription,
-      description_id: customDescription, // Use same description for Indonesian
+      description_id: customDescription,
       type: CUSTOM_HOLIDAY_TYPE_VALUES[customTypeLabel],
     };
 
-    createMutation.mutate(holidayData, {
-      onSuccess: () => {
-        resetForm();
-        setShowAddForm(false);
-      },
-    });
+    try {
+      await customHolidayApi.create(holidayData);
+      toast.success('Hari libur berhasil ditambahkan');
+      resetForm();
+      refetch();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Gagal menambah hari libur');
+    }
   };
 
   // Handle delete custom holiday
   const handleDeleteCustomHoliday = async (holiday: Holiday) => {
     if (!holiday.id) return;
-    
+
     if (!confirm(`Hapus hari libur "${holiday.nameId}"?`)) return;
-    
-    deleteMutation.mutate(holiday.id);
+
+    try {
+      await customHolidayApi.delete(holiday.id);
+      toast.success('Hari libur berhasil dihapus');
+      refetch();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Gagal menghapus hari libur');
+    }
   };
 
   // Reset form
@@ -140,11 +230,14 @@ export default function CalendarPage() {
     });
   };
 
-  // Get holidays in current month view
+  // Get holidays in current month view (skip working day overrides)
   const getHolidaysInMonth = (year: number, month: number) => {
     const monthStr = (month + 1).toString().padStart(2, '0');
     const prefix = `${year}-${monthStr}`;
-    return holidays.filter(h => h.date.startsWith(prefix));
+    // Skip holidays with overrideNationalHoliday = true (working day override)
+    return holidays.filter(h => 
+      h.date.startsWith(prefix) && !h.overrideNationalHoliday
+    );
   };
 
   return (
@@ -191,8 +284,7 @@ export default function CalendarPage() {
                         <button
                           type="button"
                           onClick={() => handleDeleteCustomHoliday(getHolidayForDate(selectedDate)!)}
-                          disabled={deleteMutation.isPending}
-                          className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                          className="text-xs font-medium text-red-600 hover:text-red-800"
                           title="Hapus hari libur custom"
                         >
                           Hapus
@@ -285,7 +377,7 @@ export default function CalendarPage() {
                 <textarea
                   value={customDescription}
                   onChange={(e) => setCustomDescription(e.target.value)}
-                  placeholder="Jelaskan alasan hari libur ini (contoh: mengganti tanggal libur yang jatuh pada akhir pekan)"
+                  placeholder="Jelaskan alasan hari libur ini"
                   rows={3}
                   className="app-input min-h-[5rem]"
                   required
@@ -296,13 +388,45 @@ export default function CalendarPage() {
                 <Button type="button" variant="secondary" onClick={resetForm}>
                   Batal
                 </Button>
-                <Button type="submit" variant="primary" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'Menyimpan…' : 'Simpan hari libur'}
+                <Button type="submit" variant="primary" disabled={false}>
+                  Simpan hari libur
                 </Button>
               </div>
             </form>
           </Card>
         )}
+
+        {/* Quick Toggle Section */}
+        <Card padding="md">
+          <h3 className="mb-4 text-lg font-semibold text-slate-900">Toggle Tanggal Kerja ↔ Libur</h3>
+          <div className="flex items-center gap-4">
+            <input
+              type="date"
+              id="toggleDate"
+              min="2024-01-01"
+              max="2030-12-31"
+              className="app-input flex-1"
+            />
+            <Button
+              type="button"
+              variant="primary"
+              onClick={async () => {
+                const dateInput = document.getElementById('toggleDate') as HTMLInputElement;
+                if (!dateInput?.value) {
+                  toast.error('Pilih tanggal terlebih dahulu');
+                  return;
+                }
+                await handleToggleWorkingDay(dateInput.value, false);
+              }}
+              disabled={togglingDate !== null}
+            >
+              {togglingDate ? 'Memproses...' : 'Toggle Tanggal'}
+            </Button>
+          </div>
+          <p className="text-sm text-slate-500 mt-3">
+            💡 <strong>Cara kerja:</strong> Jika tanggal sudah libur → jadi hari kerja. Jika tanggal kerja → jadi libur.
+          </p>
+        </Card>
 
         {/* Calendar */}
         <Card padding="lg" className="p-8">
@@ -348,11 +472,15 @@ export default function CalendarPage() {
               {/* Legend */}
               <div className="mt-8 flex flex-wrap gap-8 text-base">
                 <div className="flex items-center gap-3">
-                  <div className="h-6 w-6 rounded border-2 border-indigo-200 bg-indigo-50" />
+                  <div className="h-6 w-6 rounded text-xs font-semibold text-indigo-700 flex items-center justify-center">
+                    N
+                  </div>
                   <span className="font-medium text-slate-700">Hari libur nasional</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="h-6 w-6 rounded border-2 border-slate-200 bg-slate-50" />
+                  <div className="h-6 w-6 rounded text-xs font-semibold text-slate-700 bg-slate-200 flex items-center justify-center px-1">
+                    C
+                  </div>
                   <span className="font-medium text-slate-700">Custom (user)</span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -372,7 +500,7 @@ export default function CalendarPage() {
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="px-6 py-4 bg-slate-50 border-b border-slate-200">
             <h3 className="text-base font-bold text-slate-800">
-              Hari Libur Bulan Ini
+              Hari Libur - {selectedDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
             </h3>
           </div>
           <div className="divide-y divide-slate-100">
@@ -393,19 +521,21 @@ export default function CalendarPage() {
                   <div
                     key={holiday.id || index}
                     className={`flex items-start gap-4 px-6 py-4 transition-colors ${
-                      isCustom ? 'bg-slate-50/80 hover:bg-slate-100/90' : 'bg-indigo-50/30 hover:bg-indigo-50/50'
+                      isCustom 
+                        ? 'bg-slate-100 hover:bg-slate-200'  // Custom: Darker background
+                        : 'bg-indigo-50/30 hover:bg-indigo-50/50'  // National: Light indigo
                     }`}
                   >
                     <div
                       className={`mt-1.5 h-3 w-3 flex-shrink-0 rounded-full ${
-                        isCustom ? 'bg-slate-500' : 'bg-indigo-600'
+                        isCustom ? 'bg-slate-600' : 'bg-indigo-600'
                       }`}
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-3">
                         <p
                           className={`text-base font-semibold ${
-                            isCustom ? 'text-slate-900' : 'text-slate-900'
+                            isCustom ? 'text-slate-800' : 'text-slate-900'
                           }`}
                         >
                           {holiday.nameId}
@@ -438,12 +568,28 @@ export default function CalendarPage() {
                       >
                         {holiday.type}
                       </span>
+                      {/* Toggle Button - Show for all holidays */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleWorkingDay(holiday.date.split('T')[0], true)}
+                        disabled={togglingDate === holiday.date.split('T')[0]}
+                        className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Ubah menjadi hari kerja"
+                      >
+                        {togglingDate === holiday.date.split('T')[0] ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
+                      </button>
+                      {/* Delete Button - Only for custom holidays */}
                       {isCustom && (
                         <button
                           type="button"
                           onClick={() => handleDeleteCustomHoliday(holiday)}
-                          disabled={deleteMutation.isPending}
-                          className="p-1 text-red-600 hover:text-red-800 disabled:opacity-50"
+                          className="p-1 text-red-600 hover:text-red-800"
                           title="Hapus hari libur custom"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -136,12 +136,15 @@ export default function AttendanceDailyTable({
           </thead>
           <tbody>
             {data.map((record, index) => {
-              const isWeekend = isSunday(record.clockIn);
+              // Use record.date for users who haven't clocked in (BELUM_ABSEN)
+              // Use record.clockIn for users who have clocked in
+              const dateForDisplay = record.date || record.clockIn;
+              const isWeekend = dateForDisplay ? isSunday(dateForDisplay) : false;
               const showDayName = isWeekend;
-              
+
               return (
                 <tr
-                  key={record.id}
+                  key={record.id || record.userId}
                   className={`border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors ${
                     isWeekend ? 'bg-red-50' : ''
                   }`}
@@ -151,37 +154,41 @@ export default function AttendanceDailyTable({
                   <td className="px-6 py-4 text-center border-r border-gray-200 text-gray-700 text-base">
                     {index + 1}
                   </td>
-                  
+
                   {/* Nama */}
                   <td className="px-6 py-4 border-r border-gray-200">
                     <div className="text-gray-700 font-semibold text-base">
                       {record.user.name}
                     </div>
                   </td>
-                  
+
                   {/* Tgl */}
                   <td className="px-6 py-4 border-r border-gray-200">
                     <div className="text-gray-700 text-base">
-                      {formatDate(record.clockIn)}
+                      {dateForDisplay ? formatDate(dateForDisplay) : '-'}
                     </div>
                     {showDayName && (
                       <div className="text-sm text-red-600 font-bold mt-1">
-                        {getDayName(record.clockIn)}
+                        {getDayName(dateForDisplay)}
                       </div>
                     )}
                   </td>
-                  
+
                   {/* Jam Masuk — warna mengikuti aturan 09:15 (sama seperti modal edit) */}
                   <td className="px-6 py-4 text-center border-r border-gray-200">
-                    <span
-                      className={`font-bold text-base ${
-                        isClockInLateFromIso(record.clockIn) ? 'text-red-600' : 'text-green-600'
-                      }`}
-                    >
-                      {formatTime(record.clockIn)}
-                    </span>
+                    {record.clockIn ? (
+                      <span
+                        className={`font-bold text-base ${
+                          isClockInLateFromIso(record.clockIn) ? 'text-red-600' : 'text-green-600'
+                        }`}
+                      >
+                        {formatTime(record.clockIn)}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-base">-</span>
+                    )}
                   </td>
-                  
+
                   {/* Jam Keluar */}
                   <td className="px-6 py-4 text-center border-r border-gray-200">
                     {record.clockOut ? (

@@ -147,21 +147,37 @@ export function AttendanceDetailsModal({
   // Resolve photo URLs from nested or flat structure
   const r = record as any;
 
-  const selfieUrlIn = r.selfieUrlIn || r.photos?.clockIn || null;
-  const selfieUrlOut = r.selfieUrlOut || r.photos?.clockOut || null;
-  const jobCompletionPhotos = r.photos?.jobCompletion || r.photos?.jobCompletionPhotos || null;
-  const signatureUrl = r.photos?.signature || r.customerSignature || null;
-  const airWaterPhoto = r.photos?.airWater || r.airWaterPhoto || null;
+  // Helper function to safely extract URL from photo data (string or object { url: string })
+  const getPhotoUrl = (photoData: any): string | null => {
+    if (!photoData) return null;
+    if (typeof photoData === 'string') return photoData;
+    if (typeof photoData === 'object' && photoData.url && typeof photoData.url === 'string') return photoData.url;
+    return null;
+  };
+
+  const selfieUrlIn = getPhotoUrl(r.selfieUrlIn || r.photos?.clockIn);
+  const selfieUrlOut = getPhotoUrl(r.selfieUrlOut || r.photos?.clockOut);
+  // Asumsi jobCompletionPhotos bisa berupa array atau satu objek
+  const jobCompletionPhotosData = r.photos?.jobCompletion || r.photos?.jobCompletionPhotos;
+  const jobCompletionUrl = Array.isArray(jobCompletionPhotosData) && jobCompletionPhotosData.length > 0
+    ? getPhotoUrl(jobCompletionPhotosData[0]) // Ambil URL foto pertama jika array
+    : getPhotoUrl(jobCompletionPhotosData); // Ambil URL jika bukan array
+  
+  const signatureUrl = getPhotoUrl(r.photos?.signature || r.customerSignature);
+  const airWaterPhoto = getPhotoUrl(r.photos?.airWater || r.airWaterPhoto);
 
   const BASE_URL = import.meta.env.VITE_API_PUBLIC_URL || 'http://157.66.34.174:15320';
 
-  const resolveImageUrl = (path: string | null) => {
-    if (!path) return null;
+  const resolveImageUrl = (path: string | null): string | null => {
+    if (!path || typeof path !== 'string') {
+      console.warn('[ATTENDANCE DETAIL] Invalid path for resolveImageUrl:', path);
+      return null;
+    }
     if (path.startsWith('http')) return path;
-    if (path.includes('[object Object]')) return null;
     if (path.startsWith('/attendance/')) {
+      // Logic ini sepertinya spesifik untuk endpoint Minio yang melayani gambar
+      // Pastikan tidak ada penggantian ekstensi .jpg ke .bin yang salah
       let cleanPath = path.replace('/attendance/out/', '/attendance/in/');
-      cleanPath = cleanPath.replace('.jpg', '.bin');
       const key = cleanPath.replace(/^\//, '');
       return `${BASE_URL}/api/images/${key}`;
     }
@@ -170,15 +186,29 @@ export function AttendanceDetailsModal({
 
   const selfieInUrl = resolveImageUrl(selfieUrlIn);
   const selfieOutUrl = resolveImageUrl(selfieUrlOut);
-  const jobCompletionUrl = resolveImageUrl(jobCompletionPhotos);
+  const jobCompletionPhotoUrl = resolveImageUrl(jobCompletionUrl);
   const signatureImageUrl = resolveImageUrl(signatureUrl);
   const airWaterImageUrl = resolveImageUrl(airWaterPhoto);
 
-  const hasPhotos = !!(selfieInUrl || selfieOutUrl || jobCompletionUrl || signatureImageUrl || airWaterImageUrl);
+  const hasPhotos = !!(selfieInUrl || selfieOutUrl || jobCompletionPhotoUrl || signatureImageUrl || airWaterImageUrl);
 
-  console.log('[ATTENDANCE DETAIL] Has photos:', hasPhotos);
-  console.log('[ATTENDANCE DETAIL] Resolved:', { selfieInUrl, selfieOutUrl });
-  console.log('[ATTENDANCE DETAIL] === END PHOTO DEBUG ===');
+  // BRO DEBUG: Logging di produksi harus dengan alat monitoring/logging,
+  // tetapi console.warn akan lebih terlihat daripada console.log standar
+  console.warn('[ATTENDANCE DETAIL] Raw photo data:', {
+    selfieUrlInRaw: r.selfieUrlIn,
+    selfieUrlOutRaw: r.selfieUrlOut,
+    jobCompletionPhotosRaw: jobCompletionPhotosData,
+    signatureUrlRaw: r.photos?.signature || r.customerSignature,
+    airWaterPhotoRaw: r.photos?.airWater || r.airWaterPhoto,
+  });
+  console.warn('[ATTENDANCE DETAIL] Resolved image URLs:', {
+    selfieInUrl,
+    selfieOutUrl,
+    jobCompletionPhotoUrl,
+    signatureImageUrl,
+    airWaterImageUrl,
+  });
+  console.warn('[ATTENDANCE DETAIL] === END PHOTO DEBUG ===');
 
   const googleMapsUrlIn = record.latitudeIn && record.longitudeIn
     ? `https://www.google.com/maps?q=${record.latitudeIn},${record.longitudeIn}`
@@ -368,14 +398,14 @@ export function AttendanceDetailsModal({
                     </div>
                   )}
                   {/* Job Completion Photos */}
-                  {jobCompletionUrl && (
+                  {jobCompletionPhotoUrl && (
                     <div>
                       <span className="text-gray-500 text-xs">Hasil Kerja</span>
                       <img
-                        src={jobCompletionUrl}
+                        src={jobCompletionPhotoUrl}
                         alt="Job Completion"
                         className="mt-1 w-full h-40 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
-                        onClick={() => window.open(jobCompletionUrl, '_blank')}
+                        onClick={() => window.open(jobCompletionPhotoUrl, '_blank')}
                       />
                     </div>
                   )}

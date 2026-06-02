@@ -5,7 +5,7 @@ import {
   addAuditLog,
   getRecentActivity,
 } from "./api";
-import type { AuditLog, AuditQueryParams } from "./types";
+import type { AuditLog, AuditQueryParams, EntityType } from "./types";
 
 // Query key factory
 export const auditKeys = {
@@ -31,7 +31,7 @@ export function useAuditLogs(params: AuditQueryParams = {}) {
 /**
  * Query: Get audit logs for specific entity
  */
-export function useEntityAuditLogs(entityType: string, entityId: string | null) {
+export function useEntityAuditLogs(entityType: EntityType, entityId: string | null) {
   return useQuery<AuditLog[], Error>({
     queryKey: auditKeys.entity(entityType, entityId!),
     queryFn: () => getEntityAuditLogs(entityType, entityId!),

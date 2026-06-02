@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import PageContainer from '@/components/ui/PageContainer';
 import Button from '@/components/ui/Button';
 import SalesScheduleForm, {
   type SalesScheduleFormData,
 } from '@/features/schedule/components/SalesScheduleForm';
+import ScheduleDetailModal from '@/features/schedule/components/ScheduleDetailModal';
 import { useToast } from '@/components/ui/ToastContext';
 import {
   useSalesSchedules,
@@ -12,11 +14,14 @@ import {
   useCancelSalesSchedule,
   useDeleteSalesSchedule,
 } from '@/features/schedule/hooks/useSalesSchedules';
+import { useScheduleWebSocket } from '@/features/schedule/hooks/useScheduleWebSocket';
 import { locationApi } from '@/services/scheduleApi';
+import { scheduleApi } from '@/services/scheduleApi';
 import type { Schedule, CreateScheduleInput, UpdateScheduleInput, ScheduleStatus } from '@/shared/types/schedule';
 import {
   getScheduleAssigneeDisplay,
   getStatusBadgeClasses,
+  formatScheduleStatus,
 } from '@/features/schedule/utils/scheduleHelpers';
 import { useUser } from '@/shared/UserContext';
 import { canEditSchedule, canDeleteSchedule } from '@/modules/auth/permissions';
@@ -30,11 +35,36 @@ import type { Role } from '@/modules/auth/types';
 export default function SalesSchedule() {
   const toast = useToast();
   const { user } = useUser();
+  const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
+  const [selectedScheduleAttendances, setSelectedScheduleAttendances] = useState<any[]>([]);
+
+  // WebSocket for real-time schedule updates
+  const { connected } = useScheduleWebSocket({
+    enabled: true,
+    userId: user?.id,
+    onScheduleUpdate: (data) => {
+      console.log('[SalesSchedule] Schedule status updated:', data);
+      // Auto-refresh data when status changes
+      refetch();
+      // Also invalidate all schedule-related queries
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return queryKey.some(key => 
+            typeof key === 'string' && 
+            (key.includes('schedule') || key.includes('sales'))
+          );
+        }
+      });
+    },
+  });
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -241,6 +271,23 @@ export default function SalesSchedule() {
     }
   };
 
+  const handleViewDetail = async (schedule: any) => {
+    setSelectedSchedule(schedule);
+    try {
+      // Fetch attendance records for this schedule
+      const response = await scheduleApi.getById(schedule.id);
+      if (response.success && response.data) {
+        // Extract attendance records from the schedule detail
+        const attendances = response.data.attendances || [];
+        setSelectedScheduleAttendances(attendances);
+        setDetailModalOpen(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch schedule detail:', error);
+      toast.error('Gagal memuat detail jadwal');
+    }
+  };
+
   const handleFilterReset = () => {
     setFilters({
       status: '',
@@ -257,7 +304,15 @@ export default function SalesSchedule() {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <p className="text-slate-600">Kelola jadwal kunjungan sales</p>
+          <div>
+            <p className="text-slate-600">Kelola jadwal kunjungan sales</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`inline-block w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-xs text-slate-500">
+                {connected ? 'Real-time updates connected' : 'Connecting...'}
+              </span>
+            </div>
+          </div>
           <Button type="button" variant={showForm ? 'outline' : 'primary'} onClick={() => setShowForm(!showForm)}>
             {showForm ? 'Tutup form' : '+ Jadwal baru'}
           </Button>
@@ -427,11 +482,21 @@ export default function SalesSchedule() {
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClasses(schedule.status)}`}
                       >
-                        {schedule.status}
+                        {formatScheduleStatus(schedule.status)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
+                        {schedule.status === 'COMPLETED' && (
+                          <button
+                            type="button"
+                            onClick={() => handleViewDetail(schedule)}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                            title="Lihat detail kehadiran"
+                          >
+                            Lihat Detail
+                          </button>
+                        )}
                         {canEdit && schedule.status !== 'CANCELLED' && schedule.status !== 'COMPLETED' && (
                           <button
                             type="button"
@@ -515,6 +580,20 @@ export default function SalesSchedule() {
           )}
         </div>
       </div>
+
+      {/* Detail Modal - Only shown for COMPLETED schedules */}
+      {detailModalOpen && selectedSchedule && (
+        <ScheduleDetailModal
+          isOpen={detailModalOpen}
+          onClose={() => {
+            setDetailModalOpen(false);
+            setSelectedSchedule(null);
+            setSelectedScheduleAttendances([]);
+          }}
+          schedule={selectedSchedule}
+          attendances={selectedScheduleAttendances}
+        />
+      )}
     </PageContainer>
   );
 }

@@ -19,6 +19,8 @@
     "react-calendar": "^6.0.0",
     "react-dom": "^19.2.0",
     "react-time-picker": "^8.0.2",
+    "recharts": "^3.8.1",
+    "socket.io-client": "^4.8.3",
     "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },

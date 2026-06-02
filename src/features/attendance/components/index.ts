@@ -6,3 +6,4 @@ export { AttendanceFilters } from './AttendanceFilters';
 export { AttendanceDetailsModal } from './AttendanceDetailsModal';
 export { Pagination } from './Pagination';
 export { default as ExportButtons } from './ExportButtons';
+export { default as CreateManualAttendanceModal } from './CreateManualAttendanceModal';

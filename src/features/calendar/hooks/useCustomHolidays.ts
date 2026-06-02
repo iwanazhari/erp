@@ -25,7 +25,7 @@ export function useCreateCustomHoliday() {
     mutationFn: (data: CreateCustomHolidayInputFull) => customHolidayApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['custom-holidays'] });
-      queryClient.invalidateQueries({ queryKey: ['holidays'] });
+      queryClient.invalidateQueries({ queryKey: ['holidays'] }); // Invalidate national holidays cache
       toast.success('Hari libur berhasil ditambahkan!');
     },
     onError: (error: any) => {
@@ -47,7 +47,7 @@ export function useUpdateCustomHoliday() {
       customHolidayApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['custom-holidays'] });
-      queryClient.invalidateQueries({ queryKey: ['holidays'] });
+      queryClient.invalidateQueries({ queryKey: ['holidays'] }); // Invalidate national holidays cache
       toast.success('Hari libur berhasil diperbarui!');
     },
     onError: (error: any) => {
@@ -68,7 +68,7 @@ export function useDeleteCustomHoliday() {
     mutationFn: (id: string) => customHolidayApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['custom-holidays'] });
-      queryClient.invalidateQueries({ queryKey: ['holidays'] });
+      queryClient.invalidateQueries({ queryKey: ['holidays'] }); // Invalidate national holidays cache
       toast.success('Hari libur berhasil dihapus!');
     },
     onError: (error: any) => {

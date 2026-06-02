@@ -7,21 +7,21 @@ import type { Role } from "./types";
  */
 export const permissions = {
   attendance: {
-    view: ["admin", "supervisor", "technician", "sales", "finance", "hr"] as Role[],
-    edit: ["admin", "supervisor", "hr"] as Role[],
-    quickEditStatus: ["admin", "supervisor", "hr"] as Role[],
-    viewAudit: ["admin", "supervisor", "hr"] as Role[],
+    view: ["admin", "supervisor", "technician", "sales", "finance", "hr", "manager"] as Role[],
+    edit: ["admin", "supervisor", "hr", "manager"] as Role[],
+    quickEditStatus: ["admin", "supervisor", "hr", "manager"] as Role[],
+    viewAudit: ["admin", "supervisor", "hr", "manager"] as Role[],
     delete: ["admin"] as Role[],
-    export: ["admin", "supervisor", "hr"] as Role[],
+    export: ["admin", "supervisor", "hr", "manager"] as Role[],
   },
   schedule: {
-    view: ["admin", "supervisor", "technician", "sales", "finance", "hr"] as Role[],
-    edit: ["admin", "supervisor", "sales", "hr"] as Role[],
+    view: ["admin", "supervisor", "technician", "sales", "finance", "hr", "manager"] as Role[],
+    edit: ["admin", "supervisor", "sales", "hr", "manager"] as Role[],
     delete: ["admin"] as Role[],
   },
   reports: {
-    view: ["admin", "supervisor", "sales", "finance", "hr"] as Role[],
-    export: ["admin", "supervisor", "hr"] as Role[],
+    view: ["admin", "supervisor", "sales", "finance", "hr", "manager"] as Role[],
+    export: ["admin", "supervisor", "hr", "manager"] as Role[],
   },
 } as const;
 

@@ -153,7 +153,9 @@ export function AttendanceHistoryTable({
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-800">
                 <div className="flex items-center gap-2">
-                  <span>{record.clockOut ? formatTime(record.clockOut) : '-'}</span>
+                  <span>
+                    {record.clockOut ? formatTime(record.clockOut) : '-'}
+                  </span>
                   {record.latitudeOut && record.longitudeOut && (
                     <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />

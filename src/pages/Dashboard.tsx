@@ -1,12 +1,17 @@
 import PageContainer from "@/components/ui/PageContainer";
 import KpiCard from "@/components/ui/KpiCard";
 import ActivityFeed from "@/components/dashboard/ActivityFeed";
+import AttendanceTrafficChart from "@/components/dashboard/AttendanceTrafficChart";
 import { useRecentActivity } from "@/modules/audit/hooks";
+import { useAuditWebSocket } from "@/modules/audit/useAuditWebSocket";
 import { useDashboardSummary } from "@/features/dashboard/hooks/useDashboard";
 
 export default function Dashboard() {
   const { data: recentActivity, isLoading: activityLoading } = useRecentActivity(10);
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary();
+
+  // Real-time audit log updates via WebSocket
+  useAuditWebSocket();
 
   const isLoading = summaryLoading || activityLoading;
 
@@ -50,6 +55,11 @@ export default function Dashboard() {
           label="Pending Approvals"
           value={isLoading ? "..." : String(summary?.pendingApprovals ?? 0)}
         />
+      </div>
+
+      {/* Attendance Traffic Chart */}
+      <div className="mt-6">
+        <AttendanceTrafficChart />
       </div>
 
       {/* Recent Activity Section */}

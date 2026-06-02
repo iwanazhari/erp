@@ -104,7 +104,7 @@ export const authApi = {
   login: async (data: LoginInput): Promise<AuthResponse> => {
     const response = await publicApi.post('/login', data);
     const responseData = response.data as any;
-    
+
     // Handle flat response structure from API
     if (responseData.accessToken && !responseData.data) {
       return {

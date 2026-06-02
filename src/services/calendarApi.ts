@@ -225,6 +225,7 @@ export const customHolidayApi = {
       created_at: h.createdAt || h.created_at,
       updated_at: h.updatedAt || h.updated_at,
       deleted_at: h.deletedAt || h.deleted_at,
+      override_national_holiday: h.overrideNationalHoliday || h.override_national_holiday || false,
     }));
     
     console.log('Custom holidays converted:', converted);
@@ -261,10 +262,10 @@ export const customHolidayApi = {
   mergeWithApiHolidays: async (apiHolidays: Holiday[], year?: number): Promise<Holiday[]> => {
     try {
       const customHolidays = await customHolidayApi.getAll(year);
-      
+
       console.log('API holidays:', apiHolidays.length);
       console.log('Custom holidays:', customHolidays.length);
-      
+
       // Convert custom holidays to Holiday format (handle both camelCase and snake_case)
       const customAsHolidays: Holiday[] = customHolidays.map(custom => ({
         date: custom.date.split('T')[0], // Ensure YYYY-MM-DD format
@@ -276,9 +277,9 @@ export const customHolidayApi = {
         isCustom: true,
         id: custom.id,
       }));
-      
+
       console.log('Custom as holidays:', customAsHolidays);
-      
+
       // Merge and remove duplicates (custom holidays take precedence)
       const merged = [...apiHolidays];
       customAsHolidays.forEach(custom => {
@@ -292,12 +293,45 @@ export const customHolidayApi = {
           merged.push(custom); // Add new
         }
       });
-      
+
       // Sort by date
       return merged.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     } catch (error) {
       console.error('Failed to fetch custom holidays:', error);
       return apiHolidays; // Return only API holidays if custom fetch fails
     }
+  },
+
+  /**
+   * Toggle working day (convert working day to holiday or vice versa)
+   * If date has holiday → delete holiday (becomes working day)
+   * If date is working day → create holiday (becomes holiday)
+   * Supports national holiday override (convert national holiday to working day)
+   */
+  toggleWorkingDay: async (data: {
+    date: string;
+    type?: string;
+    name?: string;
+    description?: string;
+    overrideNationalHoliday?: boolean;
+    isWorkingDayOverride?: boolean;
+  }): Promise<CustomHoliday | void> => {
+    // Ensure we always send name and description
+    const payload = {
+      date: data.date,
+      type: data.type || 'LIBUR_PERUSAHAAN',
+      name: data.name || 'Libur Perusahaan',
+      description: data.description || 'Libur perusahaan',
+      overrideNationalHoliday: data.overrideNationalHoliday || false,
+      isWorkingDayOverride: data.isWorkingDayOverride || data.overrideNationalHoliday || false,
+    };
+
+    console.log('[API] Toggle payload:', payload);
+
+    const response = await privateApi.patch('/custom-holidays/toggle-working-day', payload);
+
+    console.log('[API] Toggle response:', response.data);
+
+    return response.data.data || response.data;
   },
 };

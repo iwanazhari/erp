@@ -1,4 +1,4 @@
-export type EntityType = "attendance" | "schedule" | "user";
+export type EntityType = "attendance" | "schedule" | "user" | "leave" | "overtime" | "location" | "customHoliday" | "paymentTransaction" | "task" | "company" | "item" | "reminder";
 
 export type AuditAction = "create" | "update" | "delete";
 

@@ -27,6 +27,7 @@ export interface Holiday {
   type: 'National' | 'Observance' | 'Bank Holiday' | 'Custom' | string;
   isCustom?: boolean; // Flag untuk custom holiday
   id?: string; // ID untuk custom holiday
+  overrideNationalHoliday?: boolean; // Flag untuk working day override
 }
 
 export interface CustomHoliday {
@@ -40,6 +41,7 @@ export interface CustomHoliday {
   description_id: string | null;
   type: CustomHolidayType;
   is_active: boolean;
+  override_national_holiday: boolean; // Flag for national holiday override
   created_at: string; // ISO 8601 datetime
   updated_at: string; // ISO 8601 datetime
   deleted_at: string | null;

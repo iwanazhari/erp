@@ -45,6 +45,13 @@ const mockUsers: Record<Role, User> = {
     role: "hr",
     companyId: "company-1",
   },
+  manager: {
+    id: "user-manager",
+    name: "Manager User",
+    email: "manager@company.com",
+    role: "manager",
+    companyId: "company-1",
+  },
 };
 
 /**

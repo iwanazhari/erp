@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageContainer from '@/components/ui/PageContainer';
 import ExportButtons from '@/features/attendance/components/ExportButtons';
 import { useAttendanceExport } from '@/features/attendance/hooks/useAttendanceExport';
 import MonthlyGridReportPage from '@/features/attendance/pages/MonthlyGridReportPage';
 import DeferredPaymentReportPage from '@/features/attendance/pages/DeferredPaymentReportPage';
+import { userApi, type UserOption } from '@/services/userApi';
 import type {
   HistoryExportFilters,
   AllRecordsExportFilters,
@@ -34,6 +35,50 @@ export default function Reports() {
     status: undefined,
     clockOutStatus: undefined,
   });
+
+  // User dropdown state
+  const [userOptions, setUserOptions] = useState<UserOption[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Load users on mount
+  useEffect(() => {
+    const loadUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const response = await userApi.getAllUsers();
+        console.log('User API response:', response);
+        // Extract users from response (handles both array and object formats)
+        const users = userApi.extractUsers(response);
+        if (users.length > 0) {
+          // Sort users by name
+          const sortedUsers = users.sort((a, b) => 
+            a.name.localeCompare(b.name)
+          );
+          setUserOptions(sortedUsers);
+          console.log('Users loaded:', sortedUsers.length, sortedUsers.map(u => u.name));
+        } else {
+          console.warn('No users found in API response');
+        }
+      } catch (error) {
+        console.error('Failed to load users:', error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    loadUsers();
+  }, []);
+
+  // Filter users based on search query - show all users if no search
+  const filteredUserOptions = searchQuery
+    ? userOptions.filter(
+        (user) =>
+          user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : userOptions; // Show all users if no search
+
+  console.log('Search query:', searchQuery, 'Filtered users:', filteredUserOptions.length);
 
   // Active tab
   const [activeTab, setActiveTab] = useState<'monthlyGrid' | 'history' | 'allRecords' | 'payment'>('monthlyGrid');
@@ -141,15 +186,69 @@ export default function Reports() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    👤 User ID (Opsional)
+                    👤 User (Opsional)
                   </label>
+                  {/* Search box */}
                   <input
                     type="text"
-                    value={historyFilters.userId || ''}
-                    onChange={(e) => setHistoryFilters({ ...historyFilters, userId: e.target.value })}
-                    placeholder="UUID user..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Ketik nama atau email user..."
+                    disabled={loadingUsers}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
+                  {/* User suggestions dropdown */}
+                  {searchQuery.length > 0 && !historyFilters.userId && (
+                    <div className="relative mt-1">
+                      <div className="absolute z-10 w-full max-h-60 overflow-auto bg-white border border-gray-300 rounded-lg shadow-lg">
+                        {loadingUsers && (
+                          <div className="px-4 py-2 text-sm text-gray-500">Loading...</div>
+                        )}
+                        {!loadingUsers && filteredUserOptions.length === 0 && (
+                          <div className="px-4 py-2 text-sm text-gray-500">User tidak ditemukan</div>
+                        )}
+                        {!loadingUsers && filteredUserOptions.map((user) => (
+                          <button
+                            key={user.id}
+                            type="button"
+                            onClick={() => {
+                              setHistoryFilters({ ...historyFilters, userId: user.id });
+                              setSearchQuery(''); // Clear search query after selection
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors"
+                          >
+                            <div className="font-medium text-gray-900">{user.name}</div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Selected user display */}
+                  {historyFilters.userId && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-blue-900">
+                            👤 {userOptions.find(u => u.id === historyFilters.userId)?.name}
+                          </div>
+                          <div className="text-xs text-blue-600">
+                            {userOptions.find(u => u.id === historyFilters.userId)?.email}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setHistoryFilters({ ...historyFilters, userId: '' })}
+                          className="text-red-600 hover:text-red-800 p-1"
+                          title="Hapus pilihan"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -185,7 +284,7 @@ export default function Reports() {
                 </p>
                 <ul className="mt-2 text-sm text-blue-700 space-y-1">
                   <li>• <strong>Per Tanggal:</strong> Tentukan rentang tanggal mulai dan akhir</li>
-                  <li>• <strong>Per User:</strong> Masukkan User ID untuk filter spesifik</li>
+                  <li>• <strong>Per User:</strong> Pilih user dari dropdown (nama/email)</li>
                   <li>• <strong>Status:</strong> Filter berdasarkan status kehadiran</li>
                 </ul>
               </div>

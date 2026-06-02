@@ -254,9 +254,15 @@ export const attendanceApi = {
   },
 
   /**
-   * Export Monthly Grid Report to Excel
-   * Endpoint: GET /api/attendance/export/grid
+   * Export Monthly Grid Report to Excel (Bukti Report)
+   * Endpoint: GET /api/attendance/export/bukti-report
    * Access: ADMIN, HR, MANAGER
+   *
+   * Features:
+   * - Grid bulanan dengan Jam Masuk/Jam Keluar per tanggal
+   * - Grouping per minggu (bisa shrink/expand di Excel)
+   * - Conditional formatting: Merah (terlambat > 09:15), Kuning (Minggu)
+   * - Sheet terpisah untuk Sisa Cuti & SID
    *
    * @param filters - Export filters (year, month, q)
    * @returns Blob (Excel file)
@@ -269,11 +275,57 @@ export const attendanceApi = {
     if (filters?.q) params.append('q', filters.q);
 
     const response = await privateApi.get<Blob>(
-      `/attendance/export/grid?${params}`,
+      `/attendance/export/bukti-report?${params}`,
       {
         responseType: 'blob',
       }
     );
+    return response.data;
+  },
+
+
+  /**
+   * Create or update attendance record manually
+   * Used for cases where user couldn't clock in/out due to device/app issues
+   * 
+   * @param data - Attendance data to create or update
+   * @param userId - User ID to create/update attendance for
+   * @param date - Date for the attendance (YYYY-MM-DD)
+   * @returns ApiResponse with attendance data
+   */
+  createOrUpdate: async (data: {
+    status?: string;
+    clockIn?: string;
+    clockOut?: string;
+    latitudeIn?: number;
+    longitudeIn?: number;
+    latitudeOut?: number;
+    longitudeOut?: number;
+    selfieUrlIn?: string;
+    selfieUrlOut?: string;
+    leaveReason?: string;
+    leaveFileUrl?: string;
+    leaveStatus?: string;
+    approvedBy?: string;
+    approvedAt?: string;
+    workReport?: string;
+    clockOutStatus?: string;
+    clockOutReason?: string;
+    requiresManagerApproval?: boolean;
+    paymentAmount?: number;
+    paymentStatus?: string;
+    isPaidSession?: boolean;
+    deferredReason?: string;
+    paymentDueDate?: string;
+    followUpNotes?: string;
+    followUpDate?: string;
+    editReason: string; // Required field for audit trail
+  }, userId: string, date: string): Promise<ApiResponse<AttendanceRecord>> => {
+    const response = await privateApi.post<ApiResponse<AttendanceRecord>>('/attendance/create-or-update', {
+      ...data,
+      userId,
+      date,
+    });
     return response.data;
   },
 };

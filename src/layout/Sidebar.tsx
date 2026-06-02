@@ -78,7 +78,7 @@ export default function Sidebar() {
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-slate-800/80 bg-slate-950 text-slate-100">
       <div className="border-b border-slate-800/80 px-4 py-4">
-        <div className="text-lg font-semibold tracking-tight text-white">Worksy ERP</div>
+        <div className="text-lg font-semibold tracking-tight text-white">Waterpro HRIS</div>
         <p className="mt-0.5 text-xs text-slate-500">Panel admin</p>
       </div>
       <nav className="flex-1 overflow-y-auto py-3">

@@ -3,6 +3,7 @@ import {
   formatScheduleTime,
   getScheduleAssigneeDisplay,
   getStatusBadgeClasses,
+  formatScheduleStatus,
   scheduleKindBadgeClasses,
   scheduleKindLabel,
 } from '../utils/scheduleHelpers';
@@ -96,7 +97,7 @@ export default function ScheduleTable({ schedules, onRowClick, isLoading }: Prop
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClasses(schedule.status)}`}
                   >
-                    {schedule.status}
+                    {formatScheduleStatus(schedule.status)}
                   </span>
                 </td>
               </tr>

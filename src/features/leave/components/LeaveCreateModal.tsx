@@ -173,53 +173,70 @@ export default function LeaveCreateModal({
                 <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="leave-target-search">
                   Cari karyawan
                 </label>
-                <input
-                  id="leave-target-search"
-                  type="search"
-                  autoComplete="off"
-                  placeholder={loadingTargets ? 'Memuat daftar…' : 'Nama atau email…'}
-                  value={targetSearch}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setTargetSearch(v);
-                    setTargetListOpen(true);
-                    if (targetUserId) setTargetUserId('');
-                  }}
-                  onFocus={() => setTargetListOpen(true)}
-                  disabled={loadingTargets}
-                  className="app-input"
-                  aria-autocomplete="list"
-                  aria-expanded={targetListOpen}
-                  aria-controls="leave-target-listbox"
-                />
-                {targetListOpen && !loadingTargets && (
+                <div className="relative">
+                  <input
+                    id="leave-target-search"
+                    type="search"
+                    autoComplete="off"
+                    placeholder={loadingTargets ? 'Memuat daftar…' : 'Nama atau email…'}
+                    value={targetSearch}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setTargetSearch(v);
+                      setTargetListOpen(true);
+                      if (targetUserId) setTargetUserId('');
+                    }}
+                    onFocus={() => setTargetListOpen(true)}
+                    disabled={loadingTargets}
+                    className="app-input pr-10"
+                    aria-autocomplete="list"
+                    aria-expanded={targetListOpen}
+                    aria-controls="leave-target-listbox"
+                  />
+                  {targetUserId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetUserId('');
+                        setTargetSearch('');
+                        setTargetListOpen(false);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      title="Hapus pilihan"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {targetListOpen && !loadingTargets && filteredTargets.length > 0 && (
                   <ul
                     id="leave-target-listbox"
                     role="listbox"
                     className="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
                   >
-                    {filteredTargets.length === 0 ? (
-                      <li className="px-3 py-2 text-sm text-slate-500">Tidak ada yang cocok</li>
-                    ) : (
-                      filteredTargets.map((u) => (
-                        <li key={u.id} role="option">
-                          <button
-                            type="button"
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-indigo-50"
-                            onMouseDown={(ev) => ev.preventDefault()}
-                            onClick={() => {
-                              setTargetUserId(u.id);
-                              setTargetSearch(`${u.name} · ${u.email}`);
-                              setTargetListOpen(false);
-                            }}
-                          >
-                            <span className="font-medium text-slate-900">{u.name}</span>
-                            <span className="block text-xs text-slate-500">{u.email}</span>
-                          </button>
-                        </li>
-                      ))
-                    )}
+                    {filteredTargets.map((u) => (
+                      <li key={u.id} role="option">
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-indigo-50"
+                          onMouseDown={(ev) => ev.preventDefault()}
+                          onClick={() => {
+                            setTargetUserId(u.id);
+                            setTargetSearch(`${u.name} (${u.email})`);
+                            setTargetListOpen(false);
+                          }}
+                        >
+                          <span className="font-medium text-slate-900">{u.name}</span>
+                          <span className="block text-xs text-slate-500">{u.email}</span>
+                        </button>
+                      </li>
+                    ))}
                   </ul>
+                )}
+                {targetListOpen && !loadingTargets && filteredTargets.length === 0 && targetSearch.trim() && (
+                  <div className="absolute z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white py-2 text-center text-sm text-slate-500 shadow-lg">
+                    Tidak ada karyawan ditemukan
+                  </div>
                 )}
                 <p className="mt-1 text-xs text-slate-500">
                   Hanya Admin/HR yang dapat mengajukan untuk user lain; perusahaan harus sama dengan token Anda.

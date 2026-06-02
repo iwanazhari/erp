@@ -139,9 +139,9 @@ export function getStatusColor(status: ScheduleStatus): string {
 export function getStatusBadgeClasses(status: ScheduleStatus): string {
   const config: Record<ScheduleStatus, string> = {
     PENDING: 'bg-amber-50 text-amber-800 ring-1 ring-amber-200/80',
-    ASSIGNED: 'bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200/80',
-    IN_PROGRESS: 'bg-indigo-100 text-indigo-900 ring-1 ring-indigo-200/80',
-    COMPLETED: 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80',
+    ASSIGNED: 'bg-blue-50 text-blue-800 ring-1 ring-blue-200/80',
+    IN_PROGRESS: 'bg-purple-50 text-purple-800 ring-1 ring-purple-200/80',
+    COMPLETED: 'bg-green-50 text-green-800 ring-1 ring-green-200/80',
     CANCELLED: 'bg-red-50 text-red-800 ring-1 ring-red-200/80',
   };
   return config[status] || 'bg-slate-100 text-slate-700 ring-1 ring-slate-200/80';
@@ -154,6 +154,17 @@ export function formatScheduleTime(dateString: string): string {
     minute: '2-digit',
     timeZone: 'Asia/Jakarta',
   });
+}
+
+export function formatScheduleStatus(status: ScheduleStatus): string {
+  const labels: Record<ScheduleStatus, string> = {
+    PENDING: 'Pending',
+    ASSIGNED: 'Assigned',
+    IN_PROGRESS: 'In Progress',
+    COMPLETED: 'Completed',
+    CANCELLED: 'Cancelled',
+  };
+  return labels[status] || status;
 }
 
 export function formatScheduleDate(dateString: string): string {
