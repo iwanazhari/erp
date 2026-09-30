@@ -48,6 +48,9 @@ export type ScheduleStatus = 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED
 /** Satu jadwal hanya salah satu: teknisi lapangan atau sales (backend). */
 export type ScheduleKind = 'TECHNICIAN' | 'SALES';
 
+/** Jenis pekerjaan teknisi di lapangan. */
+export type ScheduleType = 'SURVEY' | 'INSTALLATION' | 'MAINTENANCE';
+
 export interface ScheduleParticipant {
   userId?: string;
   role?: string;
@@ -57,6 +60,7 @@ export interface ScheduleParticipant {
 export interface Schedule {
   id: string;
   scheduleKind?: ScheduleKind;
+  scheduleType?: ScheduleType | null;
   /** Untuk jadwal SALES biasanya `null` (legacy/API lama bisa masih mengisi). */
   technicianId?: string | null;
   technician?: Technician | null;
@@ -122,6 +126,7 @@ export interface CreateScheduleInput {
   technicianId?: string;
   technicianIds?: string[];
   salesIds?: string[];
+  salesObserverIds?: string[];
   locationId?: string;
   locationName?: string;
   locationAddress?: string;
@@ -130,6 +135,7 @@ export interface CreateScheduleInput {
   endTime: string;
   description?: string;
   notes?: string;
+  scheduleType?: ScheduleType;
   companyId?: string;
   // Technician location coordinates (optional)
   latitude?: number;
@@ -141,6 +147,7 @@ export interface UpdateScheduleInput {
   technicianId?: string;
   technicianIds?: string[];
   salesIds?: string[];
+  salesObserverIds?: string[];
   locationId?: string;
   locationName?: string;
   locationAddress?: string;

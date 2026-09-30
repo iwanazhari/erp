@@ -9,69 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UsersRouteImport } from './routes/users'
-import { Route as HelpRouteImport } from './routes/help'
-import { Route as ScheduleRouteImport } from './routes/schedule'
-import { Route as ReportsRouteImport } from './routes/reports'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as OvertimeRouteImport } from './routes/overtime'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as LeaveRouteImport } from './routes/leave'
-import { Route as CustomHolidaysRouteImport } from './routes/custom-holidays'
-import { Route as CalendarRouteImport } from './routes/calendar'
-import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ScheduleSalesRouteImport } from './routes/schedule.sales'
+import { Route as AttendanceRouteImport } from './routes/attendance'
+import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as CustomHolidaysRouteImport } from './routes/custom-holidays'
+import { Route as HelpRouteImport } from './routes/help'
+import { Route as LeaveRouteImport } from './routes/leave'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as OvertimeRouteImport } from './routes/overtime'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as TrackingRouteImport } from './routes/tracking'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as ScheduleMyRouteImport } from './routes/schedule.my'
+import { Route as ScheduleSalesRouteImport } from './routes/schedule.sales'
 
-const UsersRoute = UsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HelpRoute = HelpRouteImport.update({
-  id: '/help',
-  path: '/help',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ScheduleRoute = ScheduleRouteImport.update({
-  id: '/schedule',
-  path: '/schedule',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReportsRoute = ReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OvertimeRoute = OvertimeRouteImport.update({
-  id: '/overtime',
-  path: '/overtime',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LeaveRoute = LeaveRouteImport.update({
-  id: '/leave',
-  path: '/leave',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CustomHolidaysRoute = CustomHolidaysRouteImport.update({
-  id: '/custom-holidays',
-  path: '/custom-holidays',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CalendarRoute = CalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AttendanceRoute = AttendanceRouteImport.update({
@@ -79,19 +35,69 @@ const AttendanceRoute = AttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ScheduleSalesRoute = ScheduleSalesRouteImport.update({
-  id: '/sales',
-  path: '/sales',
-  getParentRoute: () => ScheduleRoute,
+const CustomHolidaysRoute = CustomHolidaysRouteImport.update({
+  id: '/custom-holidays',
+  path: '/custom-holidays',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeaveRoute = LeaveRouteImport.update({
+  id: '/leave',
+  path: '/leave',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OvertimeRoute = OvertimeRouteImport.update({
+  id: '/overtime',
+  path: '/overtime',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScheduleRoute = ScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrackingRoute = TrackingRouteImport.update({
+  id: '/tracking',
+  path: '/tracking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ScheduleMyRoute = ScheduleMyRouteImport.update({
   id: '/my',
   path: '/my',
+  getParentRoute: () => ScheduleRoute,
+} as any)
+const ScheduleSalesRoute = ScheduleSalesRouteImport.update({
+  id: '/sales',
+  path: '/sales',
   getParentRoute: () => ScheduleRoute,
 } as any)
 
@@ -100,12 +106,14 @@ export interface FileRoutesByFullPath {
   '/attendance': typeof AttendanceRoute
   '/calendar': typeof CalendarRoute
   '/custom-holidays': typeof CustomHolidaysRoute
+  '/help': typeof HelpRoute
   '/leave': typeof LeaveRoute
   '/login': typeof LoginRoute
   '/overtime': typeof OvertimeRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/tracking': typeof TrackingRoute
   '/users': typeof UsersRoute
   '/schedule/my': typeof ScheduleMyRoute
   '/schedule/sales': typeof ScheduleSalesRoute
@@ -115,12 +123,14 @@ export interface FileRoutesByTo {
   '/attendance': typeof AttendanceRoute
   '/calendar': typeof CalendarRoute
   '/custom-holidays': typeof CustomHolidaysRoute
+  '/help': typeof HelpRoute
   '/leave': typeof LeaveRoute
   '/login': typeof LoginRoute
   '/overtime': typeof OvertimeRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/tracking': typeof TrackingRoute
   '/users': typeof UsersRoute
   '/schedule/my': typeof ScheduleMyRoute
   '/schedule/sales': typeof ScheduleSalesRoute
@@ -131,12 +141,14 @@ export interface FileRoutesById {
   '/attendance': typeof AttendanceRoute
   '/calendar': typeof CalendarRoute
   '/custom-holidays': typeof CustomHolidaysRoute
+  '/help': typeof HelpRoute
   '/leave': typeof LeaveRoute
   '/login': typeof LoginRoute
   '/overtime': typeof OvertimeRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/tracking': typeof TrackingRoute
   '/users': typeof UsersRoute
   '/schedule/my': typeof ScheduleMyRoute
   '/schedule/sales': typeof ScheduleSalesRoute
@@ -148,12 +160,14 @@ export interface FileRouteTypes {
     | '/attendance'
     | '/calendar'
     | '/custom-holidays'
+    | '/help'
     | '/leave'
     | '/login'
     | '/overtime'
     | '/register'
     | '/reports'
     | '/schedule'
+    | '/tracking'
     | '/users'
     | '/schedule/my'
     | '/schedule/sales'
@@ -163,12 +177,14 @@ export interface FileRouteTypes {
     | '/attendance'
     | '/calendar'
     | '/custom-holidays'
+    | '/help'
     | '/leave'
     | '/login'
     | '/overtime'
     | '/register'
     | '/reports'
     | '/schedule'
+    | '/tracking'
     | '/users'
     | '/schedule/my'
     | '/schedule/sales'
@@ -178,12 +194,14 @@ export interface FileRouteTypes {
     | '/attendance'
     | '/calendar'
     | '/custom-holidays'
+    | '/help'
     | '/leave'
     | '/login'
     | '/overtime'
     | '/register'
     | '/reports'
     | '/schedule'
+    | '/tracking'
     | '/users'
     | '/schedule/my'
     | '/schedule/sales'
@@ -194,78 +212,24 @@ export interface RootRouteChildren {
   AttendanceRoute: typeof AttendanceRoute
   CalendarRoute: typeof CalendarRoute
   CustomHolidaysRoute: typeof CustomHolidaysRoute
+  HelpRoute: typeof HelpRoute
   LeaveRoute: typeof LeaveRoute
   LoginRoute: typeof LoginRoute
   OvertimeRoute: typeof OvertimeRoute
   RegisterRoute: typeof RegisterRoute
   ReportsRoute: typeof ReportsRoute
   ScheduleRoute: typeof ScheduleRouteWithChildren
+  TrackingRoute: typeof TrackingRoute
   UsersRoute: typeof UsersRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/schedule': {
-      id: '/schedule'
-      path: '/schedule'
-      fullPath: '/schedule'
-      preLoaderRoute: typeof ScheduleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reports': {
-      id: '/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/overtime': {
-      id: '/overtime'
-      path: '/overtime'
-      fullPath: '/overtime'
-      preLoaderRoute: typeof OvertimeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/leave': {
-      id: '/leave'
-      path: '/leave'
-      fullPath: '/leave'
-      preLoaderRoute: typeof LeaveRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/custom-holidays': {
-      id: '/custom-holidays'
-      path: '/custom-holidays'
-      fullPath: '/custom-holidays'
-      preLoaderRoute: typeof CustomHolidaysRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/calendar': {
-      id: '/calendar'
-      path: '/calendar'
-      fullPath: '/calendar'
-      preLoaderRoute: typeof CalendarRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/attendance': {
@@ -275,25 +239,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AttendanceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/schedule/sales': {
-      id: '/schedule/sales'
-      path: '/sales'
-      fullPath: '/schedule/sales'
-      preLoaderRoute: typeof ScheduleSalesRouteImport
-      parentRoute: typeof ScheduleRoute
+    '/custom-holidays': {
+      id: '/custom-holidays'
+      path: '/custom-holidays'
+      fullPath: '/custom-holidays'
+      preLoaderRoute: typeof CustomHolidaysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leave': {
+      id: '/leave'
+      path: '/leave'
+      fullPath: '/leave'
+      preLoaderRoute: typeof LeaveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/overtime': {
+      id: '/overtime'
+      path: '/overtime'
+      fullPath: '/overtime'
+      preLoaderRoute: typeof OvertimeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/schedule': {
+      id: '/schedule'
+      path: '/schedule'
+      fullPath: '/schedule'
+      preLoaderRoute: typeof ScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tracking': {
+      id: '/tracking'
+      path: '/tracking'
+      fullPath: '/tracking'
+      preLoaderRoute: typeof TrackingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/schedule/my': {
       id: '/schedule/my'
       path: '/my'
       fullPath: '/schedule/my'
       preLoaderRoute: typeof ScheduleMyRouteImport
+      parentRoute: typeof ScheduleRoute
+    }
+    '/schedule/sales': {
+      id: '/schedule/sales'
+      path: '/sales'
+      fullPath: '/schedule/sales'
+      preLoaderRoute: typeof ScheduleSalesRouteImport
       parentRoute: typeof ScheduleRoute
     }
   }
@@ -318,12 +352,14 @@ const rootRouteChildren: RootRouteChildren = {
   AttendanceRoute: AttendanceRoute,
   CalendarRoute: CalendarRoute,
   CustomHolidaysRoute: CustomHolidaysRoute,
+  HelpRoute: HelpRoute,
   LeaveRoute: LeaveRoute,
   LoginRoute: LoginRoute,
   OvertimeRoute: OvertimeRoute,
   RegisterRoute: RegisterRoute,
   ReportsRoute: ReportsRoute,
   ScheduleRoute: ScheduleRouteWithChildren,
+  TrackingRoute: TrackingRoute,
   UsersRoute: UsersRoute,
 }
 export const routeTree = rootRouteImport

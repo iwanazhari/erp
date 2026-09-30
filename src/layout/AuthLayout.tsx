@@ -1,6 +1,14 @@
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div
+      className="relative min-h-screen flex items-center justify-center p-4"
+      style={{
+        background: '#FAFAFA',
+      }}
+    >
+      {/* Accent top bar */}
+      <div className="absolute top-0 left-0 right-0 h-1 gradient-bg" />
+
       {children}
     </div>
   );

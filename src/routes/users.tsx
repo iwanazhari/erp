@@ -1,11 +1,15 @@
+import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import UsersPage from "@/pages/Users";
 import ProtectedRoute from "@/components/ProtectedRoute";
+
+const UsersPage = React.lazy(() => import("@/pages/Users"));
 
 export const Route = createFileRoute("/users")({
   component: () => (
     <ProtectedRoute>
-      <UsersPage />
+      <React.Suspense fallback={null}>
+        <UsersPage />
+      </React.Suspense>
     </ProtectedRoute>
   ),
 });

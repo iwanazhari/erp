@@ -6,6 +6,7 @@ type Props = {
   isLoading?: boolean;
   onViewDetails?: (record: AttendanceRecord) => void;
   onEdit?: (record: AttendanceRecord) => void;
+  onDelete?: (record: AttendanceRecord) => void;
 };
 
 /**
@@ -23,14 +24,16 @@ export default function AttendanceDailyTable({
   isLoading,
   onViewDetails,
   onEdit,
+  onDelete,
 }: Props) {
   // Format date to Indonesian format: "1 Maret 2026"
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = date.getDate();
-    const month = date.toLocaleDateString('id-ID', { month: 'long', timeZone: 'Asia/Jakarta' });
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Asia/Jakarta',
+    });
   };
 
   // Format time to HH:MM
@@ -43,17 +46,16 @@ export default function AttendanceDailyTable({
     });
   };
 
-  // Check if date is Sunday
+  // Check if date is Sunday (in WIB)
   const isSunday = (dateString: string) => {
     const date = new Date(dateString);
-    return date.getDay() === 0;
+    return date.toLocaleDateString('id-ID', { weekday: 'long', timeZone: 'Asia/Jakarta' }) === 'Minggu';
   };
 
   // Get day name in Indonesian
   const getDayName = (dateString: string) => {
-    const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
     const date = new Date(dateString);
-    return days[date.getDay()];
+    return date.toLocaleDateString('id-ID', { weekday: 'long', timeZone: 'Asia/Jakarta' }).toUpperCase();
   };
 
   if (isLoading) {
@@ -176,28 +178,60 @@ export default function AttendanceDailyTable({
 
                   {/* Jam Masuk — warna mengikuti aturan 09:15 (sama seperti modal edit) */}
                   <td className="px-6 py-4 text-center border-r border-gray-200">
-                    {record.clockIn ? (
-                      <span
-                        className={`font-bold text-base ${
-                          isClockInLateFromIso(record.clockIn) ? 'text-red-600' : 'text-green-600'
-                        }`}
-                      >
-                        {formatTime(record.clockIn)}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-base">-</span>
-                    )}
+                    <div className="flex items-center justify-center gap-1.5">
+                      {record.clockIn ? (
+                        <span
+                          className={`font-bold text-base ${
+                            isClockInLateFromIso(record.clockIn) ? 'text-red-600' : 'text-green-600'
+                          }`}
+                        >
+                          {formatTime(record.clockIn)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-base">-</span>
+                      )}
+                      {record.latitudeIn && record.longitudeIn && (
+                        <a
+                          href={`https://www.google.com/maps?q=${record.latitudeIn},${record.longitudeIn}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          title="Lihat lokasi check-in"
+                        >
+                          <svg className="h-4 w-4 text-blue-500 hover:text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </a>
+                      )}
+                    </div>
                   </td>
 
                   {/* Jam Keluar */}
                   <td className="px-6 py-4 text-center border-r border-gray-200">
-                    {record.clockOut ? (
-                      <span className="text-gray-700 font-medium text-base">
-                        {formatTime(record.clockOut)}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-base">-</span>
-                    )}
+                    <div className="flex items-center justify-center gap-1.5">
+                      {record.clockOut ? (
+                        <span className="text-gray-700 font-medium text-base">
+                          {formatTime(record.clockOut)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-base">-</span>
+                      )}
+                      {record.latitudeOut && record.longitudeOut && (
+                        <a
+                          href={`https://www.google.com/maps?q=${record.latitudeOut},${record.longitudeOut}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          title="Lihat lokasi check-out"
+                        >
+                          <svg className="h-4 w-4 text-red-500 hover:text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </a>
+                      )}
+                    </div>
                   </td>
                   
                   {/* Aksi - Eye and Edit icons */}
@@ -229,6 +263,20 @@ export default function AttendanceDailyTable({
                       >
                         <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+
+                      {/* Delete Icon - Delete Attendance */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete?.(record);
+                        }}
+                        className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-red-100 hover:bg-red-200 transition-colors"
+                        title="Hapus Attendance"
+                      >
+                        <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
                     </div>

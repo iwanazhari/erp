@@ -1,4 +1,5 @@
 import type { AttendanceRecord, MonthlyAttendanceUser } from '@/shared/types/attendance';
+import { resolveBackendUrl } from '@/utils/resolveBackendUrl';
 
 interface AttendanceDetailsModalProps {
   record: AttendanceRecord | MonthlyAttendanceUser | null;
@@ -157,40 +158,38 @@ export function AttendanceDetailsModal({
 
   const selfieUrlIn = getPhotoUrl(r.selfieUrlIn || r.photos?.clockIn);
   const selfieUrlOut = getPhotoUrl(r.selfieUrlOut || r.photos?.clockOut);
-  // Asumsi jobCompletionPhotos bisa berupa array atau satu objek
   const jobCompletionPhotosData = r.photos?.jobCompletion || r.photos?.jobCompletionPhotos;
-  const jobCompletionUrl = Array.isArray(jobCompletionPhotosData) && jobCompletionPhotosData.length > 0
-    ? getPhotoUrl(jobCompletionPhotosData[0]) // Ambil URL foto pertama jika array
-    : getPhotoUrl(jobCompletionPhotosData); // Ambil URL jika bukan array
+  const jobCompletionUrls = (() => {
+    if (!jobCompletionPhotosData) return [];
+    if (Array.isArray(jobCompletionPhotosData)) return jobCompletionPhotosData.map(getPhotoUrl).filter(Boolean) as string[];
+    const url = getPhotoUrl(jobCompletionPhotosData);
+    return url ? [url] : [];
+  })();
   
   const signatureUrl = getPhotoUrl(r.photos?.signature || r.customerSignature);
   const airWaterPhoto = getPhotoUrl(r.photos?.airWater || r.airWaterPhoto);
 
-  const BASE_URL = import.meta.env.VITE_API_PUBLIC_URL || 'http://157.66.34.174:15320';
+  const BASE_URL = import.meta.env.VITE_API_PUBLIC_URL;
 
   const resolveImageUrl = (path: string | null): string | null => {
     if (!path || typeof path !== 'string') {
-      console.warn('[ATTENDANCE DETAIL] Invalid path for resolveImageUrl:', path);
       return null;
     }
-    if (path.startsWith('http')) return path;
-    if (path.startsWith('/attendance/')) {
-      // Logic ini sepertinya spesifik untuk endpoint Minio yang melayani gambar
-      // Pastikan tidak ada penggantian ekstensi .jpg ke .bin yang salah
-      let cleanPath = path.replace('/attendance/out/', '/attendance/in/');
-      const key = cleanPath.replace(/^\//, '');
-      return `${BASE_URL}/api/images/${key}`;
+    if (path.startsWith('http://')) return resolveBackendUrl(path);
+    if (path.startsWith('https://')) return path;
+    if (path.startsWith('/')) {
+      return `${BASE_URL}${path}`;
     }
-    return `${BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+    return `${BASE_URL}/${path}`;
   };
 
   const selfieInUrl = resolveImageUrl(selfieUrlIn);
   const selfieOutUrl = resolveImageUrl(selfieUrlOut);
-  const jobCompletionPhotoUrl = resolveImageUrl(jobCompletionUrl);
+  const jobCompletionPhotoUrls = jobCompletionUrls.map(resolveImageUrl).filter(Boolean) as string[];
   const signatureImageUrl = resolveImageUrl(signatureUrl);
   const airWaterImageUrl = resolveImageUrl(airWaterPhoto);
 
-  const hasPhotos = !!(selfieInUrl || selfieOutUrl || jobCompletionPhotoUrl || signatureImageUrl || airWaterImageUrl);
+  const hasPhotos = !!(selfieInUrl || selfieOutUrl || jobCompletionPhotoUrls.length > 0 || signatureImageUrl || airWaterImageUrl);
 
   // BRO DEBUG: Logging di produksi harus dengan alat monitoring/logging,
   // tetapi console.warn akan lebih terlihat daripada console.log standar
@@ -204,7 +203,7 @@ export function AttendanceDetailsModal({
   console.warn('[ATTENDANCE DETAIL] Resolved image URLs:', {
     selfieInUrl,
     selfieOutUrl,
-    jobCompletionPhotoUrl,
+    jobCompletionPhotoUrls,
     signatureImageUrl,
     airWaterImageUrl,
   });
@@ -398,17 +397,17 @@ export function AttendanceDetailsModal({
                     </div>
                   )}
                   {/* Job Completion Photos */}
-                  {jobCompletionPhotoUrl && (
-                    <div>
-                      <span className="text-gray-500 text-xs">Hasil Kerja</span>
+                  {jobCompletionPhotoUrls.map((url, idx) => (
+                    <div key={idx}>
+                      <span className="text-gray-500 text-xs">Hasil Kerja {jobCompletionPhotoUrls.length > 1 ? idx + 1 : ''}</span>
                       <img
-                        src={jobCompletionPhotoUrl}
-                        alt="Job Completion"
+                        src={url}
+                        alt={`Job Completion ${idx + 1}`}
                         className="mt-1 w-full h-40 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
-                        onClick={() => window.open(jobCompletionPhotoUrl, '_blank')}
+                        onClick={() => window.open(url, '_blank')}
                       />
                     </div>
-                  )}
+                  ))}
                   {/* Customer Signature */}
                   {signatureImageUrl && (
                     <div>

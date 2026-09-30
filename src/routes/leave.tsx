@@ -1,15 +1,18 @@
+import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { LeavePage } from "@/features/leave";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
-/**
- * Izin / sakit — GET /api/leave, POST /api/leave, PATCH approve/reject
- * (cakupan daftar mengikuti role; setujui/tolak: ADMIN & HR)
- */
+const LazyLeavePage = React.lazy(async () => {
+  const { LeavePage } = await import("@/features/leave");
+  return { default: LeavePage };
+});
+
 export const Route = createFileRoute("/leave")({
   component: () => (
     <ProtectedRoute>
-      <LeavePage />
+      <React.Suspense fallback={null}>
+        <LazyLeavePage />
+      </React.Suspense>
     </ProtectedRoute>
   ),
 });

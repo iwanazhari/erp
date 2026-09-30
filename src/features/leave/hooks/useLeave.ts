@@ -57,6 +57,34 @@ export function useRejectLeave() {
   });
 }
 
+export function useDeleteLeave() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => leaveApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leaveKeys.all });
+    },
+  });
+}
+
+export function useEditLeave() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: {
+      id: string;
+      date?: string;
+      status?: string;
+      leaveReason?: string;
+      leaveFileUrl?: string;
+      leaveStatus?: string;
+      editReason: string;
+    }) => leaveApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leaveKeys.all });
+    },
+  });
+}
+
 /** @deprecated gunakan useLeaveList */
 export function useLeaves() {
   return useLeaveList();

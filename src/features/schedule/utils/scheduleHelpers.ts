@@ -1,12 +1,28 @@
-import type { Schedule, ScheduleKind, ScheduleStatus } from '@/shared/types/schedule';
+import type { Schedule, ScheduleKind, ScheduleStatus, ScheduleType } from '@/shared/types/schedule';
 
 export function resolveScheduleKind(schedule: Schedule): ScheduleKind {
   if (schedule.scheduleKind) return schedule.scheduleKind;
   if (schedule.technicianId || schedule.technician) return 'TECHNICIAN';
+  const techParticipant = schedule.participants?.find(
+    (p) => (p.role || '').toUpperCase() === 'TECHNICIAN'
+  );
+  if (techParticipant) return 'TECHNICIAN';
   return 'SALES';
 }
 
-/** Label utama baris jadwal: teknisi utama atau peserta sales (respons bisa campuran legacy + baru). */
+export function getTechnicianParticipants(schedule: Schedule) {
+  return schedule.participants?.filter(
+    (p) => (p.role || '').toUpperCase() === 'TECHNICIAN'
+  ) || [];
+}
+
+export function getSalesObserverParticipants(schedule: Schedule) {
+  return schedule.participants?.filter(
+    (p) => (p.role || '').toUpperCase() === 'SALES_OBSERVER'
+  ) || [];
+}
+
+/** Label utama baris jadwal: menampilkan nama teknisi/sales pertama + jumlah jika lebih. */
 export function getScheduleAssigneeDisplay(schedule: Schedule): {
   name: string;
   email?: string;
@@ -14,7 +30,6 @@ export function getScheduleAssigneeDisplay(schedule: Schedule): {
 } {
   const kind = resolveScheduleKind(schedule);
   if (kind === 'SALES') {
-    // Get first sales participant for display
     const salesParticipants = schedule.participants?.filter(
       (p) => (p.role || p.user?.role || '').toUpperCase() === 'SALES'
     ) || [];
@@ -23,18 +38,21 @@ export function getScheduleAssigneeDisplay(schedule: Schedule): {
     const name =
       firstSales?.user?.name ??
       (firstSales as { name?: string })?.name ??
-      schedule.technician?.name ??
       `${salesParticipants.length} Sales`;
     const email =
-      firstSales?.user?.email ?? (firstSales as { email?: string })?.email ?? schedule.technician?.email;
+      firstSales?.user?.email ?? (firstSales as { email?: string })?.email;
     return { name, email, kind: 'SALES' };
+  }
+  const techParticipants = getTechnicianParticipants(schedule);
+  if (techParticipants.length > 0) {
+    const first = techParticipants[0];
+    const firstName = first.user?.name || '';
+    const firstEmail = first.user?.email || '';
+    const suffix = techParticipants.length > 1 ? ` +${techParticipants.length - 1} lainnya` : '';
+    return { name: firstName + suffix, email: firstEmail || undefined, kind: 'TECHNICIAN' };
   }
   const t = schedule.technician;
   if (t) return { name: t.name, email: t.email, kind: 'TECHNICIAN' };
-  const techP = schedule.participants?.find((p) => (p.role || '').toUpperCase() === 'TECHNICIAN');
-  if (techP?.user) {
-    return { name: techP.user.name, email: techP.user.email, kind: 'TECHNICIAN' };
-  }
   return { name: '—', kind };
 }
 
@@ -48,10 +66,39 @@ export function scheduleKindLabel(kind: ScheduleKind): string {
   return kind === 'TECHNICIAN' ? 'Teknisi' : 'Sales';
 }
 
+export function scheduleTypeBadgeClasses(type: ScheduleType | null | undefined): string {
+  const config: Record<ScheduleType, string> = {
+    SURVEY: 'bg-cyan-50 text-cyan-800 ring-1 ring-cyan-200/80',
+    INSTALLATION: 'bg-amber-50 text-amber-800 ring-1 ring-amber-200/80',
+    MAINTENANCE: 'bg-rose-50 text-rose-800 ring-1 ring-rose-200/80',
+  };
+  return (type && config[type]) || '';
+}
+
+export function scheduleTypeLabel(type: ScheduleType | null | undefined): string {
+  const labels: Record<ScheduleType, string> = {
+    SURVEY: 'Survey',
+    INSTALLATION: 'Instalasi',
+    MAINTENANCE: 'Maintenance',
+  };
+  return (type && labels[type]) || '';
+}
+
 export function getPrimaryTechnicianIdFromSchedule(schedule: Schedule): string {
   if (schedule.technician?.id) return schedule.technician.id;
-  const techP = schedule.participants?.find((p) => (p.role || '').toUpperCase() === 'TECHNICIAN');
+  const techP = getTechnicianParticipants(schedule)[0];
   return techP?.user?.id ?? techP?.userId ?? '';
+}
+
+export function getAllTechnicianIdsFromSchedule(schedule: Schedule): string[] {
+  if (schedule.participants) {
+    const ids = getTechnicianParticipants(schedule)
+      .map((p) => p.user?.id || p.userId)
+      .filter(Boolean) as string[];
+    if (ids.length > 0) return ids;
+  }
+  if (schedule.technician?.id) return [schedule.technician.id];
+  return [];
 }
 
 export function getPrimarySalesUserIdFromSchedule(schedule: Schedule): string {
@@ -78,14 +125,6 @@ export function handleScheduleError(error: any): string {
     FORBIDDEN: () => {
       return 'Anda tidak memiliki izin untuk melakukan aksi ini.';
     },
-    SCHEDULE_TIME_OVERLAP: (data) => {
-      const overlaps = data?.meta?.overlappingSchedules || [];
-      return `Jadwal bentrok dengan ${overlaps.length} jadwal lain.`;
-    },
-    TECHNICIAN_DAILY_QUOTA_EXCEEDED: (data) => {
-      const { quotaMax } = data?.meta || {};
-      return `Teknisi sudah mencapai batas maksimal ${quotaMax} lokasi per hari.`;
-    },
     PAST_SCHEDULE_NOT_ALLOWED: () => {
       return 'Tidak dapat membuat jadwal di masa lalu.';
     },
@@ -100,9 +139,6 @@ export function handleScheduleError(error: any): string {
     },
     SCHEDULE_CANNOT_BE_CANCELLED: () => {
       return 'Jadwal sudah selesai atau dibatalkan.';
-    },
-    SCHEDULE_CANNOT_BE_MODIFIED: () => {
-      return 'Jadwal yang sudah selesai tidak dapat diubah.';
     },
     LOCATION_HAS_ACTIVE_SCHEDULES: () => {
       return 'Lokasi memiliki jadwal aktif dan tidak dapat dihapus.';

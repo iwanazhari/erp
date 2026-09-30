@@ -287,7 +287,7 @@ export function useUpdateAttendance() {
         payload.clockOut = checkOutDate.toISOString();
       }
 
-      const response = await privateApi.put(`/attendance/${data.id}`, payload);
+      const response = await privateApi.patch(`/attendance/${data.id}`, payload);
       return response.data;
     },
     onSuccess: () => {
@@ -296,4 +296,25 @@ export function useUpdateAttendance() {
     },
   });
 }
+/**
+ * Hook to delete an attendance record
+ *
+ * Uses DELETE /api/attendance/:id endpoint
+ *
+ * @returns Mutation object with delete function
+ */
+export function useDeleteAttendance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await attendanceApi.delete(id);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+    },
+  });
+}
+
 export { useCreateOrUpdateAttendance } from './useCreateOrUpdateAttendance';

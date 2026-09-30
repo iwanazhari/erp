@@ -1,11 +1,15 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useAttendanceRecords } from '@/features/attendance/hooks/useAttendance';
+import { useAttendanceRecords, useDeleteAttendance } from '@/features/attendance/hooks/useAttendance';
 import {
   AttendanceDailyTable,
   AttendanceDetailsModal,
   AttendanceEditModal,
 } from '@/features/attendance/components';
 import CreateManualAttendanceModal from '@/features/attendance/components/CreateManualAttendanceModal';
+import ApplyLeaveModal from '@/features/attendance/components/ApplyLeaveModal';
+import SidManualModal from '@/features/attendance/components/SidManualModal';
+import { useToast } from '@/components/ui/ToastContext';
+import { useConfirm } from '@/components/ui/ConfirmDialogContext';
 import type { AttendanceRecordsFilters, AttendanceRecord } from '@/shared/types/attendance';
 
 const DEFAULT_PAGE_SIZE = 100;
@@ -35,6 +39,12 @@ export default function AttendanceHistoryPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isApplyLeaveModalOpen, setIsApplyLeaveModalOpen] = useState(false);
+  const [isSidManualModalOpen, setIsSidManualModalOpen] = useState(false);
+
+  const toast = useToast();
+  const { confirm } = useConfirm();
+  const deleteAttendanceMutation = useDeleteAttendance();
 
   const today = getTodayInIndonesia();
   const [startDate, setStartDate] = useState(today);
@@ -94,6 +104,22 @@ export default function AttendanceHistoryPage() {
     setIsCreateModalOpen(false);
   }, []);
 
+  const handleApplyLeave = useCallback(() => {
+    setIsApplyLeaveModalOpen(true);
+  }, []);
+
+  const handleCloseApplyLeaveModal = useCallback(() => {
+    setIsApplyLeaveModalOpen(false);
+  }, []);
+
+  const handleSidManual = useCallback(() => {
+    setIsSidManualModalOpen(true);
+  }, []);
+
+  const handleCloseSidManualModal = useCallback(() => {
+    setIsSidManualModalOpen(false);
+  }, []);
+
   const handleCreateSuccess = useCallback(() => {
     setFilters((prev) => ({ ...prev, page: 1 }));
   }, []);
@@ -117,7 +143,7 @@ export default function AttendanceHistoryPage() {
       const dateStr = `${year}-${month}-${day}`;
 
       const { privateApi } = await import('@/services/authApi');
-      await privateApi.put(`/attendance/${editingRecord.id}`, {
+      await privateApi.patch(`/attendance/${editingRecord.id}`, {
         status: editData.status,
         editReason: editData.editReason,
         clockIn: editData.checkIn ? new Date(`${dateStr}T${editData.checkIn}:00`).toISOString() : undefined,
@@ -133,27 +159,70 @@ export default function AttendanceHistoryPage() {
     }
   }, [editingRecord, handleCloseEditModal]);
 
+  const handleDelete = useCallback(async (record: AttendanceRecord) => {
+    const dateStr = new Date(record.clockIn || record.date).toLocaleDateString('id-ID', {
+      day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta',
+    });
+    const ok = await confirm({
+      title: 'Hapus data absensi?',
+      message: `Hapus absensi ${record.user.name} pada ${dateStr}? Tindakan ini tidak bisa dibatalkan.`,
+      confirmLabel: 'Ya, hapus',
+      cancelLabel: 'Batal',
+      type: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await deleteAttendanceMutation.mutateAsync(record.id);
+      toast.success('Data absensi berhasil dihapus.');
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || 'Gagal menghapus data absensi';
+      toast.error(msg);
+    }
+  }, [deleteAttendanceMutation, confirm, toast]);
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-6xl mx-auto">
         <div className="mb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
               <p className="text-sm text-gray-500 mt-1">
                 Menampilkan <strong>semua user</strong> dengan data attendance
               </p>
             </div>
-            <button
-              onClick={handleCreateAttendance}
-              className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors flex items-center gap-2"
-              title="Buat record attendance untuk user yang belum absen karena masalah teknis"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              Buat Absensi Manual
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleApplyLeave}
+                className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium shadow-sm transition-colors flex items-center gap-2"
+                title="Ajukan cuti tahunan atau cuti besar"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Ajukan Cuti
+              </button>
+              <button
+                onClick={handleSidManual}
+                className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium shadow-sm transition-colors flex items-center gap-2"
+                title="Input manual SID dengan bukti surat dokter"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                SID Manual
+              </button>
+              <button
+                onClick={handleCreateAttendance}
+                className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium shadow-sm transition-colors flex items-center gap-2"
+                title="Buat record attendance untuk user yang belum absen karena masalah teknis"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Buat Absensi Manual
+              </button>
+            </div>
           </div>
         </div>
 
@@ -165,7 +234,7 @@ export default function AttendanceHistoryPage() {
 
         <div className="mb-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-700">📅 Filter Tanggal</h3>
+            <h3 className="text-sm font-semibold text-gray-700">Filter Tanggal</h3>
             <p className="text-xs text-gray-500">Default: hari ini</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -223,6 +292,7 @@ export default function AttendanceHistoryPage() {
           isLoading={isLoading}
           onViewDetails={handleViewDetails}
           onEdit={handleEdit}
+          onDelete={handleDelete}
         />
 
         {data?.pagination && (
@@ -248,6 +318,8 @@ export default function AttendanceHistoryPage() {
         <AttendanceDetailsModal record={selectedRecord} isOpen={isModalOpen} onClose={handleCloseModal} />
         <AttendanceEditModal record={editingRecord} isOpen={isEditModalOpen} onClose={handleCloseEditModal} onSave={handleSaveEdit} isLoading={false} />
         <CreateManualAttendanceModal isOpen={isCreateModalOpen} onClose={handleCloseCreateModal} onSuccess={handleCreateSuccess} />
+        <ApplyLeaveModal isOpen={isApplyLeaveModalOpen} onClose={handleCloseApplyLeaveModal} onSuccess={handleCreateSuccess} />
+        <SidManualModal isOpen={isSidManualModalOpen} onClose={handleCloseSidManualModal} onSuccess={handleCreateSuccess} />
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ import type {
   User,
 } from '@/shared/types/auth';
 
-const BASE_URL = import.meta.env.VITE_API_PUBLIC_URL || 'https://worksy-production.up.railway.app';
+const BASE_URL = import.meta.env.VITE_API_PUBLIC_URL || '';
 
 // Create axios instance for public routes (no /api prefix)
 const publicApi = axios.create({

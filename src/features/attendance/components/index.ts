@@ -7,3 +7,6 @@ export { AttendanceDetailsModal } from './AttendanceDetailsModal';
 export { Pagination } from './Pagination';
 export { default as ExportButtons } from './ExportButtons';
 export { default as CreateManualAttendanceModal } from './CreateManualAttendanceModal';
+export { default as ApplyLeaveModal } from './ApplyLeaveModal';
+export { default as SidManualModal } from './SidManualModal';
+export { OvertimeRowsTable } from './OvertimeRowsTable';

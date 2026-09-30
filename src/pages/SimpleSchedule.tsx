@@ -12,6 +12,7 @@ import {
 import { locationApi } from '@/services/scheduleApi';
 import type { Schedule, CreateScheduleInput, UpdateScheduleInput } from '@/shared/types/schedule';
 import { getPrimarySalesUserIdFromSchedule, getScheduleAssigneeDisplay } from '@/features/schedule/utils/scheduleHelpers';
+import DeleteScheduleModal from '@/features/schedule/components/DeleteScheduleModal';
 import AddressAutocomplete from '@/components/ui/AddressAutocomplete';
 import TimePicker24 from '@/components/ui/TimePicker24';
 
@@ -34,6 +35,7 @@ export default function SimpleSchedule() {
   const toast = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [scheduleToDelete, setScheduleToDelete] = useState<Schedule | null>(null);
   
   // Get current time in Indonesia timezone (WIB - UTC+7)
   const getCurrentTime = () => {
@@ -182,11 +184,12 @@ export default function SimpleSchedule() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Hapus jadwal ini?')) return;
+  const handleDelete = async (reason: string) => {
+    if (!scheduleToDelete) return;
     try {
-      await deleteMutation.mutateAsync(id);
+      await deleteMutation.mutateAsync({ scheduleId: scheduleToDelete.id, reason });
       toast.success('Jadwal dihapus!');
+      setScheduleToDelete(null);
       refetch();
     } catch (error: any) {
       toast.error(error.message || 'Gagal menghapus jadwal');
@@ -435,7 +438,7 @@ export default function SimpleSchedule() {
                           </>
                         )}
                         <button
-                          onClick={() => handleDelete(schedule.id)}
+                          onClick={() => setScheduleToDelete(schedule)}
                           className="text-red-600 hover:text-red-800 text-sm"
                         >
                           Hapus
@@ -449,6 +452,18 @@ export default function SimpleSchedule() {
           </table>
         </div>
       </div>
+
+      {/* Delete Reason Modal */}
+      <DeleteScheduleModal
+        scheduleLabel={
+          scheduleToDelete
+            ? `${scheduleToDelete.date} • ${scheduleToDelete.location?.name || 'N/A'}`
+            : ''
+        }
+        isDeleting={deleteMutation.isPending}
+        onConfirm={handleDelete}
+        onClose={() => setScheduleToDelete(null)}
+      />
     </PageContainer>
   );
 }

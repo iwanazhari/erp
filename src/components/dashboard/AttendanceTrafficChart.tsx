@@ -51,16 +51,13 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload) return null;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-lg p-3">
-      <p className="text-sm font-semibold text-slate-700 mb-1">{label}</p>
+    <div className="bg-card border border-border rounded-xl shadow-lg p-3">
+      <p className="text-sm font-semibold text-foreground mb-1">{label}</p>
       {payload.map((entry) => (
         <div key={entry.name} className="flex items-center gap-2 text-xs">
-          <span
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ backgroundColor: entry.color }}
-          />
-          <span className="text-slate-600">{entry.name}:</span>
-          <span className="font-medium text-slate-800">{entry.value}</span>
+          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+          <span className="text-muted-foreground">{entry.name}:</span>
+          <span className="font-medium text-foreground">{entry.value}</span>
         </div>
       ))}
     </div>
@@ -82,7 +79,6 @@ export default function AttendanceTrafficChart() {
   const traffic = data?.traffic ?? [];
   const summary = data?.summary;
 
-  // Format dates for display
   const chartData = useMemo(
     () =>
       traffic.map((d) => ({
@@ -95,42 +91,40 @@ export default function AttendanceTrafficChart() {
     [traffic]
   );
 
+  const filterBtn = (active: boolean) =>
+    `px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+      active ? 'bg-card text-foreground shadow-sm border border-border' : 'text-muted-foreground hover:text-foreground'
+    }`;
+
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+    <div className="rounded-xl bg-card border border-border shadow-sm p-5">
       {/* Header */}
+      <div className="section-label mb-4">
+        <span className="section-label-dot" />
+        <span className="section-label-text">Attendance Traffic</span>
+      </div>
+
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-slate-800">
-          Attendance Traffic
-        </h2>
+        <div />
         <div className="flex items-center gap-3">
-          {/* Period Filter */}
-          <div className="flex bg-slate-100 rounded-lg p-0.5 gap-0.5">
+          <div className="flex bg-muted rounded-lg p-0.5 gap-0.5">
             {PERIOD_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setPeriod(opt.value)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  period === opt.value
-                    ? 'bg-white text-slate-800 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
+                className={filterBtn(period === opt.value)}
               >
                 {opt.label}
               </button>
             ))}
           </div>
 
-          {/* Role Filter */}
-          <div className="flex bg-slate-100 rounded-lg p-0.5 gap-0.5">
+          <div className="flex bg-muted rounded-lg p-0.5 gap-0.5">
             {ROLE_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setRole(opt.value)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  role === opt.value
-                    ? 'bg-white text-slate-800 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
+                className={filterBtn(role === opt.value)}
               >
                 {opt.label}
               </button>
@@ -142,19 +136,19 @@ export default function AttendanceTrafficChart() {
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-4 gap-3 mb-4">
-          <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+          <div className="rounded-lg bg-blue-50/50 border border-blue-100 p-3">
             <p className="text-xs text-blue-600 font-medium">Total Checked In</p>
             <p className="text-xl font-bold text-blue-800">{summary.totalCheckedIn}</p>
           </div>
-          <div className="bg-green-50 rounded-lg p-3 border border-green-100">
+          <div className="rounded-lg bg-green-50/50 border border-green-100 p-3">
             <p className="text-xs text-green-600 font-medium">On Time</p>
             <p className="text-xl font-bold text-green-800">{summary.totalOnTime}</p>
           </div>
-          <div className="bg-red-50 rounded-lg p-3 border border-red-100">
+          <div className="rounded-lg bg-red-50/50 border border-red-100 p-3">
             <p className="text-xs text-red-600 font-medium">Late</p>
             <p className="text-xl font-bold text-red-800">{summary.totalLate}</p>
           </div>
-          <div className="bg-purple-50 rounded-lg p-3 border border-purple-100">
+          <div className="rounded-lg bg-purple-50/50 border border-purple-100 p-3">
             <p className="text-xs text-purple-600 font-medium">Avg / Day</p>
             <p className="text-xl font-bold text-purple-800">{summary.averagePerDay}</p>
           </div>
@@ -164,7 +158,7 @@ export default function AttendanceTrafficChart() {
       {/* Chart */}
       <div className="w-full" style={{ height: 300 }}>
         {isLoading && (
-          <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
             Loading chart data...
           </div>
         )}
@@ -174,7 +168,7 @@ export default function AttendanceTrafficChart() {
           </div>
         )}
         {!isLoading && !isError && chartData.length === 0 && (
-          <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
             No attendance data found for this period.
           </div>
         )}
@@ -207,9 +201,9 @@ export default function AttendanceTrafficChart() {
                 type="monotone"
                 dataKey="total"
                 name="Total"
-                stroke="#3b82f6"
+                stroke="#0052FF"
                 strokeWidth={2}
-                dot={{ r: 3, fill: '#3b82f6' }}
+                dot={{ r: 3, fill: '#0052FF' }}
                 activeDot={{ r: 5 }}
               />
               <Line

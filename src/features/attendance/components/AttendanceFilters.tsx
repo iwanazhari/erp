@@ -37,31 +37,31 @@ export function AttendanceFilters({
     <Card padding="sm">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
         <div>
-          <label className="app-label mb-1">Tanggal mulai</label>
+          <label className="text-sm font-medium text-foreground mb-1.5 block">Tanggal mulai</label>
           <input
             type="date"
             value={localFilters.startDate || ''}
             onChange={(e) => handleInputChange('startDate', e.target.value)}
-            className="app-input"
+            className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
           />
         </div>
 
         <div>
-          <label className="app-label mb-1">Tanggal akhir</label>
+          <label className="text-sm font-medium text-foreground mb-1.5 block">Tanggal akhir</label>
           <input
             type="date"
             value={localFilters.endDate || ''}
             onChange={(e) => handleInputChange('endDate', e.target.value)}
-            className="app-input"
+            className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
           />
         </div>
 
         <div>
-          <label className="app-label mb-1">Status</label>
+          <label className="text-sm font-medium text-foreground mb-1.5 block">Status</label>
           <select
             value={localFilters.status || ''}
             onChange={(e) => handleInputChange('status', e.target.value)}
-            className="app-select"
+            className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%2364748B%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
           >
             <option value="">Semua status</option>
             <option value="present">Hadir</option>
@@ -72,11 +72,11 @@ export function AttendanceFilters({
         </div>
 
         <div>
-          <label className="app-label mb-1">Status clock out</label>
+          <label className="text-sm font-medium text-foreground mb-1.5 block">Status clock out</label>
           <select
             value={localFilters.clockOutStatus || ''}
             onChange={(e) => handleInputChange('clockOutStatus', e.target.value)}
-            className="app-select"
+            className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%2364748B%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
           >
             <option value="">Semua status</option>
             <option value="completed">Completed</option>

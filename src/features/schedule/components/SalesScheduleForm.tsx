@@ -171,8 +171,8 @@ export default function SalesScheduleForm({
         <div className="grid grid-cols-2 gap-3">
           {pickSales ? (
             <div ref={salesSearchRef} className="relative col-span-2 sm:col-span-1">
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Sales <span className="text-red-500">*</span>
+              <label className="mb-1 block text-sm font-medium text-muted-foreground">
+                 Sales <span className="text-red-500">*</span>
                 {selectedSalesCount > 0 && (
                   <span className="ml-2 text-xs text-emerald-600">
                     ({selectedSalesCount} dipilih)
@@ -190,20 +190,20 @@ export default function SalesScheduleForm({
                   setSalesListOpen(true);
                 }}
                 onFocus={() => setSalesListOpen(true)}
-                className="app-input w-full"
-                aria-autocomplete="list"
-                aria-expanded={salesListOpen}
-              />
-              {salesListOpen && (
-                <ul
-                  role="listbox"
-                  className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
+                 aria-autocomplete="list"
+                 aria-expanded={salesListOpen}
+               />
+               {salesListOpen && (
+                 <ul
+                   role="listbox"
+                   className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card py-1 shadow-lg"
                   aria-multiselectable="true"
                 >
                   {loadingSales ? (
-                    <li className="px-3 py-2 text-sm text-slate-500">Loading...</li>
-                  ) : filteredSalesUsers.length === 0 ? (
-                    <li className="px-3 py-2 text-sm text-slate-500">Tidak ada sales yang cocok</li>
+                    <li className="px-3 py-2 text-sm text-muted-foreground">Loading...</li>
+                   ) : filteredSalesUsers.length === 0 ? (
+                     <li className="px-3 py-2 text-sm text-muted-foreground">Tidak ada sales yang cocok</li>
                   ) : (
                     filteredSalesUsers.map((s) => {
                       const isSelected = formData.salesIds.includes(s.id);
@@ -211,8 +211,8 @@ export default function SalesScheduleForm({
                         <li key={s.id} role="option" aria-selected={isSelected}>
                           <button
                             type="button"
-                            className={`w-full px-3 py-2 text-left text-sm hover:bg-emerald-50 ${
-                              isSelected ? 'bg-emerald-100 font-medium' : 'text-slate-800'
+                             className={`w-full px-3 py-2 text-left text-sm hover:bg-emerald-50 ${
+                               isSelected ? 'bg-emerald-100 font-medium' : 'text-foreground'
                             }`}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => toggleSalesSelection(s.id)}
@@ -220,7 +220,7 @@ export default function SalesScheduleForm({
                             <div className="flex items-center justify-between">
                               <div>
                                 <span className="font-medium">{s.name}</span>
-                                <span className="block text-xs text-slate-500">{s.email}</span>
+                                <span className="block text-xs text-muted-foreground">{s.email}</span>
                               </div>
                               {isSelected && (
                                 <span className="text-emerald-600 text-lg">✓</span>
@@ -238,38 +238,38 @@ export default function SalesScheduleForm({
                   Terpilih: {selectedSalesNames}
                 </p>
               )}
-              <p className="mt-1 text-xs text-slate-500">Klik untuk memilih/deselect multiple sales.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Klik untuk memilih/deselect multiple sales.</p>
             </div>
           ) : (
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Sales <span className="text-slate-400">(Anda)</span>
-              </label>
-              <input
-                type="text"
-                value={user?.name || ''}
-                disabled
-                className="w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2"
+              <label className="mb-1 block text-sm font-medium text-muted-foreground">
+                 Sales <span className="text-slate-400">(Anda)</span>
+               </label>
+               <input
+                 type="text"
+                 value={user?.name || ''}
+                 disabled
+                 className="w-full rounded-lg border border-border bg-muted px-3 py-2"
               />
             </div>
           )}
 
           <div className={pickSales ? 'col-span-2 sm:col-span-1' : ''}>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Tanggal</label>
-            <input
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              min={new Date().toISOString().split('T')[0]}
-              className="app-input"
+            <label className="mb-1 block text-sm font-medium text-muted-foreground">Tanggal</label>
+             <input
+               type="date"
+               value={formData.date}
+               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+               min={new Date().toISOString().split('T')[0]}
+               className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
               required
             />
           </div>
         </div>
 
         {/* Location Manual Input */}
-        <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-3">
-          <label className="mb-1 block text-sm font-medium text-slate-700">
+        <div className="rounded-lg border border-[var(--color-accent)]/10 bg-[var(--color-accent)]/5 p-3">
+           <label className="mb-1 block text-sm font-medium text-muted-foreground">
             Lokasi <span className="text-red-500">*</span>
           </label>
           <div className="space-y-2">
@@ -277,30 +277,30 @@ export default function SalesScheduleForm({
               type="text"
               value={formData.locationName}
               onChange={(e) => setFormData({ ...formData, locationName: e.target.value, locationId: undefined })}
-              className="app-input w-full"
-              placeholder="Nama lokasi (cth: Kantor Client ABC)"
-              required
-            />
-            <input
-              type="text"
-              value={formData.locationAddress}
-              onChange={(e) => setFormData({ ...formData, locationAddress: e.target.value, locationId: undefined })}
-              className="app-input w-full"
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
+               placeholder="Nama lokasi (cth: Kantor Client ABC)"
+               required
+             />
+             <input
+               type="text"
+               value={formData.locationAddress}
+               onChange={(e) => setFormData({ ...formData, locationAddress: e.target.value, locationId: undefined })}
+               className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
               placeholder="Alamat lengkap lokasi"
               required
             />
           </div>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-muted-foreground">
             Ketik nama dan alamat lokasi secara manual, atau gunakan Google Maps untuk otomatis mengisi koordinat.
           </p>
         </div>
 
         {/* Google Maps Link (optional for new locations) */}
         <div className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-3">
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            📍 Buat Lokasi Baru dari Google Maps
-          </label>
-          <p className="mb-2 text-xs text-slate-600">
+          <label className="mb-1 block text-sm font-medium text-muted-foreground">
+             📍 Buat Lokasi Baru dari Google Maps
+           </label>
+           <p className="mb-2 text-xs text-muted-foreground">
             Jika lokasi belum ada di sistem, tempel link Google Maps untuk otomatis mengambil koordinat.
           </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
@@ -312,7 +312,7 @@ export default function SalesScheduleForm({
                 setMapsError('');
               }}
               placeholder="https://maps.app.goo.gl/... atau https://www.google.com/maps/..."
-              className="app-input min-w-0 flex-1"
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15 min-w-0 flex-1"
               autoComplete="off"
             />
             <Button
@@ -327,9 +327,9 @@ export default function SalesScheduleForm({
           </div>
           {mapsError && <p className="mt-1 text-sm text-red-600">{mapsError}</p>}
           {hasCoords && !formData.locationId && (
-            <div className="mt-3 rounded-md bg-white p-3 border border-emerald-200">
-              <p className="text-sm font-medium text-emerald-800">✓ Lokasi baru akan dibuat:</p>
-              <div className="mt-2 text-xs text-slate-700 space-y-1">
+              <div className="mt-3 rounded-md bg-card p-3 border border-emerald-200">
+                 <p className="text-sm font-medium text-emerald-800">✓ Lokasi baru akan dibuat:</p>
+                 <div className="mt-2 text-xs text-muted-foreground space-y-1">
                 <p><span className="font-medium">Nama:</span> {formData.locationName}</p>
                 <p><span className="font-medium">Alamat:</span> {formData.locationAddress}</p>
                 <p><span className="font-medium">Koordinat:</span> {formData.latitude?.toFixed(6)}, {formData.longitude?.toFixed(6)}</p>
@@ -338,7 +338,7 @@ export default function SalesScheduleForm({
                 href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-block text-sm text-indigo-600 hover:text-indigo-800"
+                className="mt-2 inline-block text-sm text-accent hover:text-[var(--color-accent-secondary)]"
               >
                 Cek di Google Maps →
               </a>
@@ -362,24 +362,24 @@ export default function SalesScheduleForm({
 
         {/* Description */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Deskripsi</label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={2}
-            className="app-input min-h-[4rem]"
+          <label className="mb-1 block text-sm font-medium text-muted-foreground">Deskripsi</label>
+           <textarea
+             value={formData.description}
+             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+             rows={2}
+             className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15 min-h-[4rem]"
             placeholder="Deskripsi kunjungan sales…"
           />
         </div>
 
         {/* Notes */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Catatan</label>
-          <textarea
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            rows={2}
-            className="app-input min-h-[4rem]"
+          <label className="mb-1 block text-sm font-medium text-muted-foreground">Catatan</label>
+           <textarea
+             value={formData.notes}
+             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+             rows={2}
+             className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15 min-h-[4rem]"
             placeholder="Catatan tambahan untuk sales…"
           />
         </div>

@@ -11,6 +11,8 @@ export interface UserOption {
   managerId?: string | null;
   companyId?: string | null;
   officeId?: string | null;
+  isActive?: boolean;
+  resignDate?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -69,15 +71,16 @@ export const userApi = {
   },
 
   /**
-   * Get all users (paginated, with optional search)
-   * GET /api/user?q=&p=&l=
+   * Get all users (paginated, with optional search and active filter)
+   * GET /api/user?q=&p=&l=&isActive=
    */
-  getAllUsers: async (params?: { q?: string; p?: number; l?: number }): Promise<SearchApiResponse> => {
+  getAllUsers: async (params?: { q?: string; p?: number; l?: number; isActive?: boolean }): Promise<SearchApiResponse> => {
     const response = await privateApi.get<SearchApiResponse>('/user', {
       params: {
         q: params?.q || '',
         p: params?.p || 1,
         l: params?.l || 1000,
+        ...(params?.isActive ? { isActive: 'true' } : {}),
       },
     });
     return response.data;
@@ -128,6 +131,8 @@ export const userApi = {
     managerId: string;
     companyId: string;
     officeId: string;
+    isActive: boolean;
+    resignDate: string | null;
   }>): Promise<{ success: boolean; message?: string; data?: UserOption }> => {
     const response = await privateApi.patch(`/user/${id}`, userData);
     return response.data;
@@ -139,6 +144,15 @@ export const userApi = {
    */
   deleteUser: async (id: string): Promise<{ success: boolean; message?: string }> => {
     const response = await privateApi.delete(`/user/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Admin reset password for a user
+   * POST /api/user/:id/reset-password
+   */
+  resetPassword: async (id: string, password: string): Promise<{ success: boolean; message?: string }> => {
+    const response = await privateApi.post(`/user/${id}/reset-password`, { password });
     return response.data;
   },
 

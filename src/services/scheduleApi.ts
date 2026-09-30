@@ -124,6 +124,15 @@ export const userApi = {
     /** Hanya peran sales — tidak mencampur teknisi (dipakai form jadwal sales + HR). */
     const sales = allUsers.filter((user: User) => userIsSalesRole(user));
 
+    // Pengecualian: Bintang (FINANCE, finance01@waterpromandiri.com) muncul di list
+    // sales form jadwal teknisi tanpa mengubah role di database.
+    const bintang = allUsers.find(
+      (u) => (u.email || '').toLowerCase() === 'finance01@waterpromandiri.com'
+    );
+    if (bintang && !sales.some((s) => s.id === bintang.id)) {
+      sales.push(bintang);
+    }
+
     return {
       success: true,
       data: sales,
@@ -154,9 +163,60 @@ export const scheduleApi = {
     return response.data;
   },
 
+  /**
+   * Ambil semua jadwal sesuai filter (bukan cuma 1 halaman) untuk export CSV.
+   * Backend: GET /schedules → { success, data: [...], pagination: { total, totalPages } }
+   */
+  getAllPaged: async (filters?: ScheduleFilters): Promise<Schedule[]> => {
+    const pageSize = 100; // batas maksimum backend
+    const all: Schedule[] = [];
+    let page = 1;
+    let totalPages = 1;
+
+    do {
+      const response = await privateApi.get('/schedules', {
+        params: {
+          ...(filters?.scheduleKind && { scheduleKind: filters.scheduleKind }),
+          ...(filters?.technicianId && { technicianId: filters.technicianId }),
+          ...(filters?.locationId && { locationId: filters.locationId }),
+          ...(filters?.status && { status: filters.status }),
+          ...(filters?.dateFrom && { dateFrom: filters.dateFrom }),
+          ...(filters?.dateTo && { dateTo: filters.dateTo }),
+          page,
+          limit: pageSize,
+        },
+      });
+
+      const body = response.data;
+      const rows: Schedule[] = Array.isArray(body?.data) ? body.data : [];
+      totalPages = body?.pagination?.totalPages ?? 1;
+      all.push(...rows);
+      page++;
+    } while (page <= totalPages);
+
+    return all;
+  },
+
   getById: async (scheduleId: string): Promise<ApiResponse<Schedule>> => {
     const response = await privateApi.get(`/schedules/${scheduleId}`);
     return response.data;
+  },
+
+  downloadReportPdf: async (scheduleId: string): Promise<void> => {
+    const response = await privateApi.get(`/schedules/${scheduleId}/pdf`, {
+      responseType: 'blob',
+    });
+    const disposition = (response.headers['content-disposition'] as string) || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match?.[1] || `laporan-teknisi-${scheduleId}.pdf`;
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   },
 
   update: async (scheduleId: string, data: UpdateScheduleInput): Promise<ApiResponse<Schedule>> => {
@@ -169,8 +229,8 @@ export const scheduleApi = {
     return response.data;
   },
 
-  delete: async (scheduleId: string): Promise<ApiResponse<void>> => {
-    const response = await privateApi.delete(`/schedules/${scheduleId}`);
+  delete: async (scheduleId: string, reason: string): Promise<ApiResponse<void>> => {
+    const response = await privateApi.delete(`/schedules/${scheduleId}`, { data: { reason } });
     return response.data;
   },
 

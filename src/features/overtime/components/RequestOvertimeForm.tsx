@@ -18,8 +18,9 @@ export const RequestOvertimeForm: React.FC<RequestOvertimeFormProps> = ({
   const [formData, setFormData] = useState({
     userId: user?.id || '',
     date: new Date().toISOString().split('T')[0],
-    hours: 1,
+    hours: '1:00',
     reason: '',
+    note: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -43,8 +44,9 @@ export const RequestOvertimeForm: React.FC<RequestOvertimeFormProps> = ({
       setFormData({
         userId: requestForOthers ? '' : user?.id || '',
         date: new Date().toISOString().split('T')[0],
-        hours: 1,
+        hours: '1:00',
         reason: '',
+        note: '',
       });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Gagal mengajukan lembur');
@@ -88,7 +90,6 @@ export const RequestOvertimeForm: React.FC<RequestOvertimeFormProps> = ({
           type="date"
           value={formData.date}
           onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-          min={new Date().toISOString().split('T')[0]}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           required
         />
@@ -96,18 +97,20 @@ export const RequestOvertimeForm: React.FC<RequestOvertimeFormProps> = ({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Durasi (Jam)
+          Durasi Lembur <span className="text-red-500">*</span>
         </label>
         <input
-          type="number"
+          type="text"
+          inputMode="numeric"
           value={formData.hours}
-          onChange={(e) => setFormData({ ...formData, hours: Number(e.target.value) })}
-          min="1"
-          max="12"
+          onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Contoh: 6:30 (6 jam 30 menit)"
+          pattern="^\d{1,2}(:\d{1,2})?$"
+          title="Format jam:menit, contoh 6:30 atau 6"
           required
         />
-        <p className="text-xs text-gray-500 mt-1">Maksimal 12 jam per hari</p>
+        <p className="text-xs text-gray-500 mt-1">Tulis jam:menit — 6:30 berarti 6 jam 30 menit</p>
       </div>
 
       <div>
@@ -121,6 +124,19 @@ export const RequestOvertimeForm: React.FC<RequestOvertimeFormProps> = ({
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Jelaskan alasan dan tujuan lembur..."
           required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Catatan Tambahan
+        </label>
+        <textarea
+          value={formData.note}
+          onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+          rows={2}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Opsional — contoh: Supri / tgl 30 September 2026 / lembur 6 jam"
         />
       </div>
 

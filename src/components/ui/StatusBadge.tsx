@@ -1,26 +1,49 @@
-const statusConfig: Record<string, { bg: string; text: string; label?: string }> = {
-  Present: { bg: "bg-emerald-50", text: "text-emerald-700" },
-  Late: { bg: "bg-amber-50", text: "text-amber-800" },
-  Absent: { bg: "bg-red-50", text: "text-red-700" },
-  /** Variasi label/kasus */
-  present: { bg: "bg-emerald-50", text: "text-emerald-700", label: "Hadir" },
-  late: { bg: "bg-amber-50", text: "text-amber-800", label: "Terlambat" },
-  leave: { bg: "bg-indigo-50", text: "text-indigo-800", label: "Cuti" },
-  absent: { bg: "bg-red-50", text: "text-red-700", label: "Tidak Hadir" },
-};
-
 type Props = {
-  status: string;
+  label?: string;
+  value?: string;
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
+  status?: 'Present' | 'Late' | 'Absent';
+  pulse?: boolean;
 };
 
-export default function StatusBadge({ status }: Props) {
-  const config = statusConfig[status] || { bg: "bg-slate-100", text: "text-slate-600" };
+const variantStyles = {
+  default: 'bg-muted text-muted-foreground border-border',
+  success: 'bg-green-50 text-green-700 border-green-200',
+  warning: 'bg-amber-50 text-amber-700 border-amber-200',
+  danger: 'bg-red-50 text-red-700 border-red-200',
+  info: 'bg-blue-50 text-blue-700 border-blue-200',
+};
+
+const dotVariant = {
+  default: 'bg-muted-foreground',
+  success: 'bg-green-500',
+  warning: 'bg-amber-500',
+  danger: 'bg-red-500',
+  info: 'bg-blue-500',
+};
+
+const statusMap: Record<string, { variant: 'success' | 'warning' | 'danger'; dot: string }> = {
+  Present: { variant: 'success', dot: 'bg-green-500' },
+  Late: { variant: 'warning', dot: 'bg-amber-500' },
+  Absent: { variant: 'danger', dot: 'bg-red-500' },
+};
+
+export default function StatusBadge({ label, value, variant = 'default', status, pulse }: Props) {
+  if (status) {
+    const mapped = statusMap[status];
+    return (
+      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${variantStyles[mapped.variant]}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${mapped.dot} ${pulse ? 'animate-pulse-dot' : ''}`} />
+        <span className="font-semibold">{status}</span>
+      </span>
+    );
+  }
 
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ring-1 ring-inset ring-black/5 ${config.bg} ${config.text}`}
-    >
-      {config.label || status}
-    </span>
+    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${variantStyles[variant]}`}>
+      <span className={`block h-1.5 w-1.5 rounded-full ${dotVariant[variant]} ${pulse ? 'animate-pulse-dot' : ''}`} />
+      {label && <span>{label}</span>}
+      {value && <span className="font-semibold">{value}</span>}
+    </div>
   );
 }

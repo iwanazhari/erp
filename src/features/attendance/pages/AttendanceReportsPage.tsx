@@ -46,7 +46,8 @@ export default function Reports() {
     const loadUsers = async () => {
       setLoadingUsers(true);
       try {
-        const response = await userApi.getAllUsers();
+        // Only load active users (hide resigned from attendance menu)
+        const response = await userApi.getAllUsers({ isActive: true });
         console.log('User API response:', response);
         // Extract users from response (handles both array and object formats)
         const users = userApi.extractUsers(response);

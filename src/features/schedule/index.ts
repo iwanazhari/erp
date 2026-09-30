@@ -25,7 +25,6 @@ export {
   useCancelSchedule,
   useDeleteSchedule,
   useBulkCreateSchedules,
-  useTechnicianAvailability,
   useTechnicianSchedules,
   useLocationSchedules,
   useLocations,

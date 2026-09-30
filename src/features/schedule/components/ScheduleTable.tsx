@@ -2,10 +2,13 @@ import {
   formatScheduleDate,
   formatScheduleTime,
   getScheduleAssigneeDisplay,
+  getTechnicianParticipants,
   getStatusBadgeClasses,
   formatScheduleStatus,
   scheduleKindBadgeClasses,
   scheduleKindLabel,
+  scheduleTypeBadgeClasses,
+  scheduleTypeLabel,
 } from '../utils/scheduleHelpers';
 import EmptyState from '@/components/ui/EmptyState';
 import type { Schedule } from '@/shared/types/schedule';
@@ -61,16 +64,44 @@ export default function ScheduleTable({ schedules, onRowClick, isLoading }: Prop
                 className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 <td className="px-4 py-4">
-                  <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${scheduleKindBadgeClasses(assignee.kind)}`}
-                  >
-                    {scheduleKindLabel(assignee.kind)}
-                  </span>
+                  <div className="flex flex-col gap-1">
+                    <span
+                      className={`inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-medium ${scheduleKindBadgeClasses(assignee.kind)}`}
+                    >
+                      {scheduleKindLabel(assignee.kind)}
+                    </span>
+                    {schedule.scheduleType && (
+                      <span
+                        className={`inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-medium ${scheduleTypeBadgeClasses(schedule.scheduleType)}`}
+                      >
+                        {scheduleTypeLabel(schedule.scheduleType)}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-4">
                   <div>
-                    <p className="font-medium text-slate-800">{assignee.name}</p>
-                    <p className="text-xs text-slate-500">{assignee.email ?? '—'}</p>
+                    {assignee.kind === 'TECHNICIAN' && schedule.participants ? (
+                      (() => {
+                        const techs = getTechnicianParticipants(schedule);
+                        return techs.length > 0 ? (
+                          <div className="flex flex-col gap-0.5">
+                            {techs.map((p) => (
+                              <span key={p.user?.id || p.userId} className="font-medium text-slate-800">
+                                {p.user?.name || '—'}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="font-medium text-slate-800">{assignee.name}</p>
+                        );
+                      })()
+                    ) : (
+                      <>
+                        <p className="font-medium text-slate-800">{assignee.name}</p>
+                        <p className="text-xs text-slate-500">{assignee.email ?? '—'}</p>
+                      </>
+                    )}
                   </div>
                 </td>
                 <td className="px-4 py-4">

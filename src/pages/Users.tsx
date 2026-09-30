@@ -20,6 +20,8 @@ type UserFormData = {
   role: string;
   division: string;
   phone: string;
+  isActive: boolean;
+  resignDate: string;
 };
 
 const emptyForm: UserFormData = {
@@ -29,6 +31,8 @@ const emptyForm: UserFormData = {
   role: 'EMPLOYEE',
   division: '',
   phone: '',
+  isActive: true,
+  resignDate: '',
 };
 
 export default function UsersPage() {
@@ -107,6 +111,8 @@ export default function UsersPage() {
       role: user.role || 'EMPLOYEE',
       division: user.division || '',
       phone: user.phone || '',
+      isActive: user.isActive !== false,
+      resignDate: user.resignDate ? user.resignDate.split('T')[0] : '',
     });
     setFormError('');
     setModalOpen(true);
@@ -141,11 +147,13 @@ export default function UsersPage() {
           role: formData.role,
           division: formData.division || null,
           phone: formData.phone || null,
+          isActive: formData.isActive,
+          resignDate: formData.resignDate || null,
         };
-        if (formData.password) {
-          payload.password = formData.password;
-        }
         await userApi.updateUser(editingUser.id, payload);
+        if (formData.password) {
+          await userApi.resetPassword(editingUser.id, formData.password);
+        }
       } else {
         await userApi.createUser({
           name: formData.name,
@@ -221,6 +229,21 @@ export default function UsersPage() {
     { header: 'Email', accessor: 'email' },
     { header: 'Role', accessor: 'role' },
     {
+      header: 'Status',
+      accessor: 'isActive' as any,
+      cell: (_val, row) => (
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            row.isActive === false
+              ? 'bg-red-100 text-red-700'
+              : 'bg-green-100 text-green-700'
+          }`}
+        >
+          {row.isActive === false ? 'RESIGN' : 'Active'}
+        </span>
+      ),
+    },
+    {
       header: 'Actions',
       accessor: 'id' as any,
       cell: (_val, row) => (
@@ -274,21 +297,21 @@ export default function UsersPage() {
           placeholder="Search name or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          className="w-full max-w-md rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
         />
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-slate-500">Loading data...</div>
+        <div className="text-center py-12 text-muted-foreground">Loading data...</div>
       ) : users.length === 0 ? (
-        <div className="text-center py-12 text-slate-500">
+        <div className="text-center py-12 text-muted-foreground">
           {search ? 'No users match your search' : 'No users yet'}
         </div>
       ) : (
         <>
           <DataTable columns={columns} data={users} />
           {total > pageSize && (
-            <div className="flex items-center justify-between mt-4 text-sm text-slate-600">
+            <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
               <span>Total: {total} users</span>
               <div className="flex items-center gap-2">
                 <Button
@@ -343,7 +366,7 @@ export default function UsersPage() {
               type="text"
               value={formData.name}
               onChange={(e) => handleFormChange('name', e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
               placeholder="Full name"
             />
           </FormField>
@@ -353,7 +376,7 @@ export default function UsersPage() {
               type="email"
               value={formData.email}
               onChange={(e) => handleFormChange('email', e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
               placeholder="email@example.com"
             />
           </FormField>
@@ -367,7 +390,7 @@ export default function UsersPage() {
               type="password"
               value={formData.password}
               onChange={(e) => handleFormChange('password', e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
               placeholder={editingUser ? 'Leave blank if unchanged' : 'Minimum 6 characters'}
             />
           </FormField>
@@ -376,7 +399,7 @@ export default function UsersPage() {
             <select
               value={formData.role}
               onChange={(e) => handleFormChange('role', e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%2364748B%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
             >
               {ROLE_OPTIONS.map((r) => (
                 <option key={r} value={r}>{r}</option>
@@ -389,7 +412,7 @@ export default function UsersPage() {
               type="text"
               value={formData.division}
               onChange={(e) => handleFormChange('division', e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
               placeholder="e.g. IT, Finance, HR"
             />
           </FormField>
@@ -399,10 +422,60 @@ export default function UsersPage() {
               type="text"
               value={formData.phone}
               onChange={(e) => handleFormChange('phone', e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
               placeholder="08xxxxxxxxxx"
             />
           </FormField>
+
+          {/* Resign Toggle */}
+          {editingUser && (
+            <div className="border-t border-border pt-4">
+              <label className="text-sm font-medium text-foreground mb-3 block">
+                Status Karyawan
+              </label>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, isActive: true, resignDate: '' }))}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    formData.isActive
+                      ? 'bg-green-100 text-green-700 border-2 border-green-500'
+                      : 'bg-gray-100 text-gray-400 border-2 border-transparent'
+                  }`}
+                >
+                  ● Aktif
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData((prev) => ({
+                    ...prev,
+                    isActive: false,
+                    resignDate: prev.resignDate || new Date().toISOString().split('T')[0],
+                  }))}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    !formData.isActive
+                      ? 'bg-red-100 text-red-700 border-2 border-red-500'
+                      : 'bg-gray-100 text-gray-400 border-2 border-transparent'
+                  }`}
+                >
+                  Resign
+                </button>
+              </div>
+              {!formData.isActive && (
+                <div className="mt-3">
+                  <label className="block text-xs text-muted-foreground mb-1">
+                    Tanggal Resign
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.resignDate}
+                    onChange={(e) => handleFormChange('resignDate', e.target.value)}
+                    className="w-full max-w-xs rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </ModalShell>
 
@@ -421,41 +494,41 @@ export default function UsersPage() {
         }
       >
         {detailLoading ? (
-          <div className="text-center py-12 text-slate-500">Loading user detail...</div>
+          <div className="text-center py-12 text-muted-foreground">Loading user detail...</div>
         ) : detailUser ? (
           <div className="space-y-6">
             {/* User Info */}
             <div>
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Informasi User
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-slate-400">Nama</label>
-                  <p className="text-sm font-medium text-slate-800">{detailUser.name}</p>
+                  <label className="text-xs text-muted-foreground">Nama</label>
+                  <p className="text-sm font-medium text-foreground">{detailUser.name}</p>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400">Email</label>
-                  <p className="text-sm font-medium text-slate-800">{detailUser.email}</p>
+                  <label className="text-xs text-muted-foreground">Email</label>
+                  <p className="text-sm font-medium text-foreground">{detailUser.email}</p>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400">Role</label>
-                  <p className="text-sm font-medium text-slate-800">{detailUser.role}</p>
+                  <label className="text-xs text-muted-foreground">Role</label>
+                  <p className="text-sm font-medium text-foreground">{detailUser.role}</p>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400">Divisi</label>
-                  <p className="text-sm font-medium text-slate-800">{detailUser.division || '-'}</p>
+                  <label className="text-xs text-muted-foreground">Divisi</label>
+                  <p className="text-sm font-medium text-foreground">{detailUser.division || '-'}</p>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400">Phone</label>
-                  <p className="text-sm font-medium text-slate-800">{detailUser.phone || '-'}</p>
+                  <label className="text-xs text-muted-foreground">Phone</label>
+                  <p className="text-sm font-medium text-foreground">{detailUser.phone || '-'}</p>
                 </div>
               </div>
             </div>
 
             {/* Leave Balance */}
-            <div className="border-t border-slate-200 pt-4">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+            <div className="border-t border-border pt-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Sisa SID & Cuti
               </h3>
               {detailUser.latestLeaveBalance ? (
@@ -482,7 +555,7 @@ export default function UsersPage() {
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-slate-400 italic">
+                <div className="text-sm text-muted-foreground italic">
                   Belum ada data SID & Cuti. Data akan muncul setelah laporan bulanan diimport.
                 </div>
               )}

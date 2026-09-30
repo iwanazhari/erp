@@ -134,14 +134,14 @@ export default function LeaveCreateModal({
         )}
 
         {allowHrTarget && (
-          <div className="rounded-lg border border-slate-200 bg-slate-50/90 p-4">
-            <p className="mb-3 text-sm font-medium text-slate-800">Pemohon</p>
+          <div className="rounded-lg border border-border bg-muted p-4">
+            <p className="mb-3 text-sm font-medium text-foreground">Pemohon</p>
             <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-6">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
                 <input
                   type="radio"
                   name="leave-applicant"
-                  className="text-indigo-600 focus:ring-indigo-500"
+                  className="text-accent focus:ring-[var(--color-accent)]/30"
                   checked={hrMode === 'self'}
                   onChange={() => {
                     setHrMode('self');
@@ -152,11 +152,11 @@ export default function LeaveCreateModal({
                 />
                 Saya sendiri (akun login)
               </label>
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
                 <input
                   type="radio"
                   name="leave-applicant"
-                  className="text-indigo-600 focus:ring-indigo-500"
+                  className="text-accent focus:ring-[var(--color-accent)]/30"
                   checked={hrMode === 'other'}
                   onChange={() => {
                     setHrMode('other');
@@ -170,7 +170,7 @@ export default function LeaveCreateModal({
             </div>
             {hrMode === 'other' && (
               <div ref={targetBoxRef} className="relative">
-                <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="leave-target-search">
+                <label className="mb-1 block text-xs font-medium text-muted-foreground" htmlFor="leave-target-search">
                   Cari karyawan
                 </label>
                 <div className="relative">
@@ -188,7 +188,7 @@ export default function LeaveCreateModal({
                     }}
                     onFocus={() => setTargetListOpen(true)}
                     disabled={loadingTargets}
-                    className="app-input pr-10"
+                    className="w-full rounded-xl border border-border bg-card px-4 py-3 pr-10 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
                     aria-autocomplete="list"
                     aria-expanded={targetListOpen}
                     aria-controls="leave-target-listbox"
@@ -201,7 +201,7 @@ export default function LeaveCreateModal({
                         setTargetSearch('');
                         setTargetListOpen(false);
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       title="Hapus pilihan"
                     >
                       ✕
@@ -212,13 +212,13 @@ export default function LeaveCreateModal({
                   <ul
                     id="leave-target-listbox"
                     role="listbox"
-                    className="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+                    className="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-border bg-card py-1 shadow-lg"
                   >
                     {filteredTargets.map((u) => (
                       <li key={u.id} role="option">
                         <button
                           type="button"
-                          className="w-full px-3 py-2 text-left text-sm hover:bg-indigo-50"
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--color-accent)]/5"
                           onMouseDown={(ev) => ev.preventDefault()}
                           onClick={() => {
                             setTargetUserId(u.id);
@@ -226,19 +226,19 @@ export default function LeaveCreateModal({
                             setTargetListOpen(false);
                           }}
                         >
-                          <span className="font-medium text-slate-900">{u.name}</span>
-                          <span className="block text-xs text-slate-500">{u.email}</span>
+                          <span className="font-medium text-foreground">{u.name}</span>
+                          <span className="block text-xs text-muted-foreground">{u.email}</span>
                         </button>
                       </li>
                     ))}
                   </ul>
                 )}
                 {targetListOpen && !loadingTargets && filteredTargets.length === 0 && targetSearch.trim() && (
-                  <div className="absolute z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white py-2 text-center text-sm text-slate-500 shadow-lg">
+                  <div className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-card py-2 text-center text-sm text-muted-foreground shadow-lg">
                     Tidak ada karyawan ditemukan
                   </div>
                 )}
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Hanya Admin/HR yang dapat mengajukan untuk user lain; perusahaan harus sama dengan token Anda.
                 </p>
               </div>
@@ -252,7 +252,7 @@ export default function LeaveCreateModal({
               id="leave-create-type"
               value={status}
               onChange={(e) => setStatus(e.target.value as CreateLeaveInput['status'])}
-              className="app-select"
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%2364748B%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               required
             >
               <option value="IZIN">Izin</option>
@@ -265,7 +265,7 @@ export default function LeaveCreateModal({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="app-input"
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
               required
             />
           </FormField>
@@ -277,7 +277,7 @@ export default function LeaveCreateModal({
             onChange={(e) => setLeaveReason(e.target.value)}
             placeholder="Jelaskan alasan pengajuan…"
             rows={4}
-            className="app-input resize-none"
+            className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15 resize-none"
             required
           />
         </FormField>
@@ -292,7 +292,7 @@ export default function LeaveCreateModal({
             value={leaveFileUrl}
             onChange={(e) => setLeaveFileUrl(e.target.value)}
             placeholder="https://…"
-            className="app-input"
+            className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
           />
         </FormField>
       </form>

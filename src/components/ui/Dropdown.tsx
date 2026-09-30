@@ -22,7 +22,6 @@ export default function Dropdown({ value, options, onChange, children }: Props) 
         setIsOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -39,14 +38,19 @@ export default function Dropdown({ value, options, onChange, children }: Props) 
       </div>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+        <div
+          className="absolute right-0 mt-1 w-32 z-50 overflow-hidden
+            rounded-xl bg-card border border-border shadow-lg py-1"
+        >
           {options.map((option) => (
             <button
               key={option.value}
               onClick={() => handleSelect(option.value)}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 transition ${
-                value === option.value ? "bg-slate-100 font-medium" : ""
-              }`}
+              className={`w-full text-left px-3 py-2 text-sm transition-colors duration-100
+                ${value === option.value
+                  ? "bg-accent/5 text-[var(--color-accent)] font-semibold"
+                  : "text-foreground hover:bg-muted"
+                }`}
             >
               {option.label}
             </button>

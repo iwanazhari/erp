@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { X } from 'lucide-react';
 
 export type ModalShellSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 
@@ -10,9 +11,7 @@ type Props = {
   children: ReactNode;
   footer?: ReactNode;
   size?: ModalShellSize;
-  /** Kelas tambahan untuk area konten scroll (mis. tinggi modal jadwal) */
   contentClassName?: string;
-  /** z-index di atas toast (50) */
   zIndexClass?: string;
 };
 
@@ -25,9 +24,6 @@ const sizeWidth: Record<ModalShellSize, string> = {
   '3xl': 'max-w-6xl',
 };
 
-/**
- * Wrapper modal konsisten: backdrop, panel, header netral (tanpa gradient warna-warni).
- */
 export default function ModalShell({
   isOpen,
   onClose,
@@ -58,32 +54,39 @@ export default function ModalShell({
     >
       <button
         type="button"
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] transition-opacity"
+        className="fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity"
         aria-label="Tutup"
         onClick={onClose}
       />
       <div
         className={[
-          'relative w-full min-w-0 rounded-xl border border-slate-200 bg-white shadow-xl',
+          'relative w-full min-w-0 mx-4 rounded-2xl bg-card shadow-xl border border-border',
           sizeWidth[size],
         ].join(' ')}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
           <div className="min-w-0 flex-1">
-            {title != null && <h2 className="text-lg font-semibold text-slate-900">{title}</h2>}
-            {subtitle != null && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+            {title != null && (
+              <h2 className="text-lg font-bold text-foreground">
+                {title}
+              </h2>
+            )}
+            {subtitle != null && (
+              <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+            )}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            className="shrink-0 rounded-lg p-1.5 text-muted-foreground
+              hover:bg-muted hover:text-foreground
+              transition-all duration-150"
             aria-label="Tutup dialog"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="h-5 w-5" />
           </button>
         </div>
+
         <div
           className={[
             'max-h-[min(85vh,880px)] overflow-y-auto px-6 py-4',
@@ -94,8 +97,12 @@ export default function ModalShell({
         >
           {children}
         </div>
+
         {footer != null && (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 px-6 py-4 bg-slate-50/80 rounded-b-xl">
+          <div
+            className="flex flex-wrap items-center justify-end gap-2 border-t border-border
+              px-6 py-4 bg-muted/30 rounded-b-2xl"
+          >
             {footer}
           </div>
         )}

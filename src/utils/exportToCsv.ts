@@ -1,26 +1,57 @@
 import type { Schedule } from '@/shared/types/schedule';
-import { getScheduleAssigneeDisplay, scheduleKindLabel } from '@/features/schedule/utils/scheduleHelpers';
+import {
+  getScheduleAssigneeDisplay,
+  scheduleKindLabel,
+  scheduleTypeLabel,
+  formatScheduleStatus,
+} from '@/features/schedule/utils/scheduleHelpers';
 
-export function exportSchedulesToCSV(schedules: Schedule[], filename = 'schedules') {
-  // Define CSV headers
+/** Escape nilai CSV: bungkus kutip, ganti newline/quote di dalamnya. */
+function cell(value: unknown): string {
+  const s = value === null || value === undefined ? '' : String(value);
+  return `"${s.replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
+}
+
+function downloadCsv(headers: string[], rows: string[][], filename: string) {
+  const csvContent = [
+    headers.map(cell).join(','),
+    ...rows.map((row) => row.join(',')),
+  ].join('\n');
+
+  const blob = new Blob(['\ufeff', csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Export jadwal yang dibaca manusia: tanpa id internal/user, tanpa email.
+ * Kolom: tanggal, jam, jenis, penugasan, lokasi, alamat, status, tipe, durasi, deskripsi, catatan.
+ */
+export function exportSchedulesToCSV(schedules: Schedule[], filename = 'jadwal') {
   const headers = [
-    'ID',
-    'Jenis jadwal',
-    'Nama penugasan',
-    'Email penugasan',
-    'Location Name',
-    'Location Address',
-    'Date',
-    'Start Time',
-    'End Time',
-    'Duration (minutes)',
+    'Tanggal',
+    'Mulai',
+    'Selesai',
+    'Durasi (menit)',
+    'Jenis',
+    'Tipe Pekerjaan',
+    'Penugasan',
+    'Lokasi',
+    'Alamat',
     'Status',
-    'Description',
-    'Notes',
-    'Created At',
+    'Deskripsi',
+    'Catatan',
   ];
 
-  // Convert schedules to CSV rows
   const rows = schedules.map((schedule) => {
     const duration = Math.floor(
       (new Date(schedule.endTime).getTime() - new Date(schedule.startTime).getTime()) /
@@ -29,41 +60,40 @@ export function exportSchedulesToCSV(schedules: Schedule[], filename = 'schedule
     const assignee = getScheduleAssigneeDisplay(schedule);
 
     return [
-      schedule.id,
-      `"${scheduleKindLabel(assignee.kind)}"`,
-      `"${assignee.name}"`,
-      `"${assignee.email ?? ''}"`,
-      `"${schedule.location?.name || ''}"`,
-      `"${schedule.location?.address || ''}"`,
-      new Date(schedule.date).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }),
-      new Date(schedule.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
-      new Date(schedule.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
-      duration,
-      schedule.status,
-      `"${schedule.description || ''}"`,
-      `"${schedule.notes || ''}"`,
-      new Date(schedule.createdAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }),
+      cell(formatDateId(schedule.date)),
+      cell(formatTimeId(schedule.startTime)),
+      cell(formatTimeId(schedule.endTime)),
+      cell(duration),
+      cell(scheduleKindLabel(assignee.kind)),
+      cell(scheduleTypeLabel(schedule.scheduleType)),
+      cell(assignee.name),
+      cell(schedule.location?.name || ''),
+      cell(schedule.location?.address || ''),
+      cell(formatScheduleStatus(schedule.status)),
+      cell(schedule.description || ''),
+      cell(schedule.notes || ''),
     ];
   });
 
-  // Combine headers and rows
-  const csvContent = [
-    headers.join(','),
-    ...rows.map((row) => row.join(',')),
-  ].join('\n');
+  downloadCsv(headers, rows, filename);
+}
 
-  // Create blob and download
-  const blob = new Blob(['\ufeff', csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  
-  link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
-  link.style.visibility = 'hidden';
-  
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+function formatDateId(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' });
+}
+
+function formatTimeId(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Jakarta',
+  });
 }
 
 export function exportLocationsToCSV(

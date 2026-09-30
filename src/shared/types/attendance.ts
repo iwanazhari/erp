@@ -10,6 +10,12 @@ export interface User {
   role: string;
   phone?: string;
   isActive?: boolean;
+  scheduleId?: string;
+  jobCompletionPhotos?: string | string[];
+  customerSignature?: string;
+  airWaterPhoto?: string;
+  workReport?: string;
+  resignDate?: string;
 }
 
 export interface Company {
@@ -60,6 +66,11 @@ export interface AttendanceRecord {
   longitudeOut: number;
   selfieUrlIn: string;
   selfieUrlOut: string;
+  scheduleId?: string;
+  jobCompletionPhotos?: string | string[];
+  customerSignature?: string;
+  airWaterPhoto?: string;
+  workReport?: string;
   user: User;
   company: Company;
   office: Office;
@@ -230,6 +241,7 @@ export interface MonthlyGridDay {
   jamMasukHighlight?: string | null;
   terlambatMerah?: boolean;
   label?: string;
+  resign?: boolean;
 }
 
 export interface MonthlyGridTotals {
@@ -238,7 +250,20 @@ export interface MonthlyGridTotals {
   tTelat: number;
   sid: number;
   cuti: number;
+  /** Total durasi lembur format "H:MM" */
+  lembur?: string;
   percentKehadiran: number;
+}
+
+/** Satu baris rekap lembur (tabel terpisah dari grid absensi) */
+export interface MonthlyGridOvertimeRow {
+  userId: string;
+  name: string;
+  date: string;
+  /** Durasi format "H:MM" */
+  hours: string;
+  reason: string;
+  note: string | null;
 }
 
 export interface MonthlyGridBalance {
@@ -256,6 +281,8 @@ export interface MonthlyGridUser {
   name: string;
   email: string;
   jabatan: string;
+  isActive?: boolean;
+  resignDate?: string;
   days: MonthlyGridDay[];
   totals: MonthlyGridTotals;
   balance: MonthlyGridBalance;
@@ -279,6 +306,9 @@ export interface MonthlyGridData {
   totalUsers: number;
   totalPages: number;
   users: MonthlyGridUser[];
+  /** Baris rekap lembur, tabel terpisah dari grid absensi */
+  overtimeRows?: MonthlyGridOvertimeRow[];
+  overtimeTotal?: { rows: number; hours: string };
   meta: MonthlyGridMeta;
 }
 

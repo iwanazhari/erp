@@ -9,7 +9,7 @@ import type {
 
 // API instance for custom holidays (backend)
 const privateApi = axios.create({
-  baseURL: `${import.meta.env.VITE_API_PUBLIC_URL || 'https://worksy-production.up.railway.app'}/api`,
+  baseURL: `${import.meta.env.VITE_API_PUBLIC_URL || ''}/api`,
   headers: {
     'Content-Type': 'application/json',
   },

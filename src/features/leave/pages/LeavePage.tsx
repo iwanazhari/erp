@@ -2,11 +2,13 @@ import { useState, useCallback, useMemo } from 'react';
 import {
   useLeaveList,
   useCreateLeave,
+  useEditLeave,
+  useDeleteLeave,
   useApproveLeave,
   useRejectLeave,
   useLeaveTargetUsers,
 } from '@/features/leave/hooks/useLeave';
-import { LeaveTable, LeaveFilters, LeaveCreateModal } from '@/features/leave/components';
+import { LeaveTable, LeaveFilters, LeaveCreateModal, LeaveEditModal, LeaveImageViewModal } from '@/features/leave/components';
 import type { CreateLeaveInput, Leave, LeaveFilters as LeaveFiltersType } from '@/shared/types/leave';
 import { useAuth } from '@/shared/AuthContext';
 import { useToast } from '@/components/ui/ToastContext';
@@ -44,10 +46,14 @@ export default function LeavePage() {
     pageSize: DEFAULT_PAGE_SIZE,
   });
   const [detailLeave, setDetailLeave] = useState<Leave | null>(null);
+  const [editLeave, setEditLeave] = useState<Leave | null>(null);
+  const [imageLeave, setImageLeave] = useState<Leave | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const { data: leaves = [], isLoading, error } = useLeaveList();
   const createLeave = useCreateLeave();
+  const editLeaveMutation = useEditLeave();
+  const deleteLeaveMutation = useDeleteLeave();
   const approveLeave = useApproveLeave();
   const rejectLeave = useRejectLeave();
 
@@ -106,6 +112,50 @@ export default function LeavePage() {
     setFilters((prev) => ({ ...prev, page: p }));
   }, []);
 
+  const handleEdit = useCallback(
+    async (data: {
+      status?: string;
+      leaveReason?: string;
+      leaveFileUrl?: string;
+      leaveStatus?: string;
+      date?: string;
+      editReason: string;
+    }) => {
+      if (!editLeave) return;
+      try {
+        await editLeaveMutation.mutateAsync({ id: editLeave.id, ...data });
+        toast.success('Izin berhasil diupdate.');
+        setEditLeave(null);
+      } catch (e) {
+        toast.error(leaveApiErrorMessage(e));
+      }
+    },
+    [editLeave, editLeaveMutation, toast]
+  );
+
+  const handleDelete = useCallback(
+    async (leave: Leave) => {
+      const dateStr = new Date(leave.date).toLocaleDateString('id-ID', {
+        day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta',
+      });
+      const ok = await confirm({
+        title: 'Hapus pengajuan izin?',
+        message: `Hapus izin ${leave.user.name} pada ${dateStr}? Tindakan ini tidak bisa dibatalkan.`,
+        confirmLabel: 'Ya, hapus',
+        cancelLabel: 'Batal',
+        type: 'danger',
+      });
+      if (!ok) return;
+      try {
+        await deleteLeaveMutation.mutateAsync(leave.id);
+        toast.success('Izin berhasil dihapus.');
+      } catch (e) {
+        toast.error(leaveApiErrorMessage(e));
+      }
+    },
+    [deleteLeaveMutation, confirm, toast]
+  );
+
   const handleCreate = useCallback(
     async (input: CreateLeaveInput) => {
       try {
@@ -125,6 +175,7 @@ export default function LeavePage() {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
+        timeZone: 'Asia/Jakarta',
       });
       const ok = await confirm({
         title: 'Setujui pengajuan izin?',
@@ -150,6 +201,7 @@ export default function LeavePage() {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
+        timeZone: 'Asia/Jakarta',
       });
       const ok = await confirm({
         title: 'Tolak pengajuan izin?',
@@ -175,14 +227,7 @@ export default function LeavePage() {
   return (
     <>
       <PageContainer
-        title="Izin & sakit"
-        subtitle={
-          <>
-            Data dari endpoint <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700">GET /api/leave</code>
-            . Daftar mengikuti hak akses per role. HR/Admin dapat memproses status{' '}
-            <span className="font-medium text-slate-700">PENDING</span>.
-          </>
-        }
+        title="Izin & Sakit"
         actions={
           <Button type="button" onClick={() => setIsCreateOpen(true)}>
             Ajukan izin
@@ -228,6 +273,9 @@ export default function LeavePage() {
             leaves={paginatedLeaves}
             isLoading={isLoading}
             onViewDetails={setDetailLeave}
+            onViewAttachment={setImageLeave}
+            onEdit={setEditLeave}
+            onDelete={handleDelete}
             canApproveReject={canHrAdmin}
             onApprove={handleApprove}
             onReject={handleReject}
@@ -269,11 +317,26 @@ export default function LeavePage() {
         allowHrTarget={canHrAdmin}
       />
 
+      <LeaveEditModal
+        leave={editLeave}
+        isOpen={!!editLeave}
+        onClose={() => setEditLeave(null)}
+        onSave={handleEdit}
+        isLoading={editLeaveMutation.isPending}
+      />
+
+      <LeaveImageViewModal
+        url={imageLeave?.leaveFileUrl ?? null}
+        userName={imageLeave?.user.name ?? ''}
+        isOpen={!!imageLeave}
+        onClose={() => setImageLeave(null)}
+      />
+
       <ModalShell
         isOpen={!!detailLeave}
         onClose={() => setDetailLeave(null)}
         title="Detail pengajuan"
-        subtitle={detailLeave ? `${detailLeave.user.name} · ${new Date(detailLeave.date).toLocaleDateString('id-ID', { dateStyle: 'long' })}` : undefined}
+        subtitle={detailLeave ? `${detailLeave.user.name} · ${new Date(detailLeave.date).toLocaleDateString('id-ID', { dateStyle: 'long', timeZone: 'Asia/Jakarta' })}` : undefined}
         size="lg"
         footer={
           <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => setDetailLeave(null)}>

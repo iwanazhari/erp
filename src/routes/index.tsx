@@ -1,11 +1,15 @@
+import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import Dashboard from "@/pages/Dashboard";
 import ProtectedRoute from "@/components/ProtectedRoute";
+
+const Dashboard = React.lazy(() => import("@/pages/Dashboard"));
 
 export const Route = createFileRoute("/")({
   component: () => (
     <ProtectedRoute>
-      <Dashboard />
+      <React.Suspense fallback={null}>
+        <Dashboard />
+      </React.Suspense>
     </ProtectedRoute>
   ),
 });

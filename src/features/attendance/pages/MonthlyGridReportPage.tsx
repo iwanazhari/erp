@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useMonthlyGridReport, useMonthlyGridExport } from '@/features/attendance/hooks/useMonthlyGridReport';
+import { OvertimeRowsTable } from '@/features/attendance/components/OvertimeRowsTable';
 import type { MonthlyGridFilters, MonthlyGridUser } from '@/shared/types/attendance';
 
 const monthNames = [
@@ -194,6 +195,16 @@ export default function MonthlyGridReportPage() {
               </div>
             </div>
 
+            {/* Tabel rekap lembur — terpisah dari grid absensi */}
+            <div className="mb-4">
+              <OvertimeRowsTable
+                rows={data.overtimeRows ?? []}
+                totalRows={data.overtimeTotal?.rows ?? 0}
+                totalHours={data.overtimeTotal?.hours ?? '0:00'}
+                monthLabel={`${monthNames[(data.month || currentMonth) - 1]} ${data.year}`}
+              />
+            </div>
+
             {/* User Cards */}
             <div className="space-y-4">
               {data.users.map((user: MonthlyGridUser) => (
@@ -294,6 +305,8 @@ export default function MonthlyGridReportPage() {
                                       ? 'bg-yellow-50 text-yellow-600'
                                       : day.liburPerusahaan
                                       ? 'bg-blue-50 text-blue-600'
+                                      : day.resign
+                                      ? 'bg-gray-200 text-gray-500 font-semibold'
                                       : day.belumBerlaku
                                       ? 'text-gray-300'
                                       : day.jamMasukHighlight === 'red'
@@ -315,6 +328,8 @@ export default function MonthlyGridReportPage() {
                                     ? 'M'
                                     : day.liburPerusahaan
                                     ? 'L'
+                                    : day.resign
+                                    ? 'RS'
                                     : day.belumBerlaku
                                     ? '-'
                                     : day.leave
@@ -338,6 +353,8 @@ export default function MonthlyGridReportPage() {
                                   className={`text-center py-1.5 px-1 text-xs ${
                                     day.minggu || day.liburPerusahaan
                                       ? 'bg-gray-50 text-gray-300'
+                                      : day.resign
+                                      ? 'bg-gray-100 text-gray-400'
                                       : day.belumBerlaku
                                       ? 'text-gray-300'
                                       : day.leave || day.leavePending || day.alpa
@@ -349,6 +366,8 @@ export default function MonthlyGridReportPage() {
                                 >
                                   {day.minggu || day.liburPerusahaan || day.belumBerlaku
                                     ? '-'
+                                    : day.resign
+                                    ? ''
                                     : day.leave || day.leavePending || day.alpa
                                     ? ''
                                     : day.jamKeluar || '-'}
@@ -369,6 +388,7 @@ export default function MonthlyGridReportPage() {
                         <span><strong className="text-orange-500">P</strong> = Pending</span>
                         <span><strong className="text-yellow-600">M</strong> = Minggu</span>
                         <span><strong className="text-blue-600">L</strong> = Libur</span>
+                        <span><strong className="text-gray-500">RS</strong> = Resign (1-25)</span>
                       </div>
                     </div>
                   )}

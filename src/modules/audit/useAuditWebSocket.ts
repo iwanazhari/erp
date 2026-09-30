@@ -14,9 +14,7 @@ export function useAuditWebSocket() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_API_PUBLIC_URL || 'http://157.66.34.174:15320';
-
-    socketRef.current = io(socketUrl, {
+    socketRef.current = io({
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,

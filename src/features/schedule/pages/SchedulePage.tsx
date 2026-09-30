@@ -16,6 +16,8 @@ import {
   ScheduleTable,
   ScheduleFilters,
 } from '@/features/schedule/components';
+import ScheduleDetailModal from '@/features/schedule/components/ScheduleDetailModal';
+import { scheduleApi } from '@/services/scheduleApi';
 import { handleScheduleError } from '@/features/schedule/utils/scheduleHelpers';
 import { exportSchedulesToCSV } from '@/utils/exportToCsv';
 import type { Schedule, CreateScheduleInput, UpdateScheduleInput, ScheduleFilters as ScheduleFilterType } from '@/shared/types/schedule';
@@ -25,6 +27,10 @@ export default function SchedulePage() {
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('view');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [detailSchedule, setDetailSchedule] = useState<any>(null);
+  const [detailAttendances, setDetailAttendances] = useState<any[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [filters, setFilters] = useState<ScheduleFilterType>({
     page: 1,
     limit: 20,
@@ -59,10 +65,38 @@ export default function SchedulePage() {
     setIsModalOpen(true);
   };
 
-  const handleRowClick = (schedule: Schedule) => {
-    setSelectedSchedule(schedule);
-    setModalMode('view');
-    setIsModalOpen(true);
+  const handleRowClick = async (schedule: Schedule) => {
+    setDetailSchedule(schedule);
+    setDetailAttendances([]);
+    setDetailLoading(true);
+    try {
+      const response = await scheduleApi.getById(schedule.id);
+      if (response.success && response.data) {
+        setDetailAttendances((response.data as any).attendances || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch schedule detail:', error);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleCloseDetail = () => {
+    setDetailSchedule(null);
+    setDetailAttendances([]);
+  };
+
+  const handleRefreshDetail = async () => {
+    if (!detailSchedule) return;
+    try {
+      const response = await scheduleApi.getById(detailSchedule.id);
+      if (response.success && response.data) {
+        setDetailSchedule(response.data as any);
+        setDetailAttendances((response.data as any).attendances || []);
+      }
+    } catch (error) {
+      console.error('Failed to refresh schedule detail:', error);
+    }
   };
 
   const handleCancelSchedule = async () => {
@@ -91,7 +125,7 @@ export default function SchedulePage() {
     if (!confirmed) return;
 
     try {
-      await deleteMutation.mutateAsync(selectedSchedule.id);
+      await deleteMutation.mutateAsync({ scheduleId: selectedSchedule.id, reason: 'Dihapus oleh admin' });
       toast.success('Jadwal berhasil dihapus!');
       setIsModalOpen(false);
     } catch (error) {
@@ -131,13 +165,22 @@ export default function SchedulePage() {
     });
   };
 
-  const handleExport = () => {
-    if (schedules.length === 0) {
-      toast.warning('Tidak ada jadwal untuk diekspor');
-      return;
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      // Tarik seluruh hasil filter (bukan hanya 20 baris di tabel), lalu export.
+      const all = await scheduleApi.getAllPaged(filters);
+      if (all.length === 0) {
+        toast.warning('Tidak ada jadwal untuk diekspor');
+        return;
+      }
+      exportSchedulesToCSV(all, 'jadwal');
+      toast.success(`${all.length} jadwal diekspor ke CSV`);
+    } catch (error) {
+      toast.error('Gagal mengekspor jadwal. Coba lagi.');
+    } finally {
+      setIsExporting(false);
     }
-    exportSchedulesToCSV(schedules, 'schedules');
-    toast.success(`${schedules.length} jadwal diekspor ke CSV`);
   };
 
   return (
@@ -154,6 +197,7 @@ export default function SchedulePage() {
               variant="outline"
               size="sm"
               onClick={handleExport}
+              disabled={isExporting}
               leftIcon={
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -165,7 +209,7 @@ export default function SchedulePage() {
                 </svg>
               }
             >
-              Export CSV
+              {isExporting ? 'Menyiapkan...' : 'Export CSV'}
             </Button>
             <Button type="button" variant="primary" size="sm" onClick={handleCreateClick}>
               + Buat jadwal
@@ -235,6 +279,16 @@ export default function SchedulePage() {
         }}
         onCancel={handleCancelSchedule}
         onDelete={handleDeleteSchedule}
+      />
+
+      {/* Detail Modal — tampilan persis build 11 Agustus (tab Catatan Kehadiran + Hasil Kerja) */}
+      <ScheduleDetailModal
+        isOpen={!!detailSchedule && !detailLoading}
+        onClose={handleCloseDetail}
+        schedule={detailSchedule}
+        attendances={detailAttendances}
+        onAttendanceUpdated={handleRefreshDetail}
+        onScheduleUpdated={handleRefreshDetail}
       />
     </PageContainer>
   );

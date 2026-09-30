@@ -46,6 +46,7 @@ export const attendanceApi = {
     const params = new URLSearchParams();
 
     if (filters?.companyId) params.append('companyId', filters.companyId);
+    if (filters?.userId) params.append('userId', filters.userId);
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
     if (filters?.status) params.append('status', filters.status);
@@ -325,6 +326,45 @@ export const attendanceApi = {
       ...data,
       userId,
       date,
+    });
+    return response.data;
+  },
+
+  /**
+   * Delete attendance record by ID
+   * Endpoint: DELETE /api/attendance/:id
+   *
+   * @param id - Attendance record ID to delete
+   * @returns ApiResponse
+   */
+  delete: async (id: string): Promise<ApiResponse<{ id: string }>> => {
+    const response = await privateApi.delete<ApiResponse<{ id: string }>>(`/attendance/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Update hasil kerja (work report) untuk satu attendance — upload foto + deskripsi
+   * Endpoint: PATCH /api/attendance/:id
+   *
+   * @param attendanceId - ID attendance record
+   * @param data - FormData berisi workReport (deskripsi), jobCompletionPhotos (foto baru), editReason
+   */
+  updateWorkResult: async (attendanceId: string, data: FormData): Promise<ApiResponse<AttendanceRecord>> => {
+    const response = await privateApi.patch<ApiResponse<AttendanceRecord>>(`/attendance/${attendanceId}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  /**
+   * Buat hasil kerja (work report) utk jadwal teknisi yg sudah lewat tanggal.
+   * Endpoint: POST /api/attendance/work-report-by-schedule
+   *
+   * @param data - FormData berisi scheduleId, workReport, jobCompletionPhotos (opsional)
+   */
+  createWorkResultBySchedule: async (data: FormData): Promise<ApiResponse<AttendanceRecord>> => {
+    const response = await privateApi.post<ApiResponse<AttendanceRecord>>('/attendance/work-report-by-schedule', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
   },

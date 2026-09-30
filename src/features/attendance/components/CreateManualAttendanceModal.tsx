@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useCreateOrUpdateAttendance } from '@/features/attendance/hooks/useCreateOrUpdateAttendance';
 import { privateApi } from '@/services/authApi';
+import { todayDate } from '@/utils/date';
 
 interface CreateManualAttendanceModalProps {
   isOpen: boolean;
@@ -32,7 +33,7 @@ export default function CreateManualAttendanceModal({
   const [formData, setFormData] = useState<FormData>({
     userId: '',
     userName: '',
-    date: new Date().toISOString().split('T')[0],
+    date: todayDate(),
     clockIn: '08:00',
     status: 'HADIR',
     editReason: '',
@@ -64,7 +65,7 @@ export default function CreateManualAttendanceModal({
         setIsLoading(true);
         try {
           const response = await privateApi.get('/user', {
-            params: { q: searchQuery, page: 1, limit: 10 }
+            params: { q: searchQuery, page: 1, limit: 10, isActive: 'true' }
           });
           
           const usersData = response.data?.data?.users || 

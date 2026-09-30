@@ -5,8 +5,11 @@ export interface OvertimeRequest {
   id: string;
   userId: string;
   date: string;
-  hours: number;
+  /** Durasi lembur format "H:MM", contoh "6:30" */
+  hours: string;
   reason: string;
+  /** Catatan request mentah dari client (teks bebas, opsional) */
+  note?: string | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   approvedBy?: string;
   approvedAt?: string;
@@ -22,8 +25,13 @@ export interface OvertimeRequest {
   };
 }
 
-export interface OvertimeListResponse {
-  overtimeRequests: OvertimeRequest[];
+export interface OvertimeListResponse extends ApiResponse<OvertimeRequest[]> {
+  total: number;
+  /** Total durasi lembur untuk seluruh hasil filter, format "H:MM" */
+  totalHours: string;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 /**
@@ -48,8 +56,9 @@ export const overtimeApi = {
   requestOvertime: async (data: {
     userId: string;
     date: string;
-    hours: number;
+    hours: string;
     reason: string;
+    note?: string;
   }): Promise<ApiResponse<OvertimeRequest>> => {
     const response = await privateApi.post<ApiResponse<OvertimeRequest>>(
       '/overtime/request',
@@ -69,10 +78,44 @@ export const overtimeApi = {
    *
    * @returns ApiResponse<OvertimeRequest[]>
    */
-  getOvertimeRequests: async (): Promise<ApiResponse<OvertimeRequest[]>> => {
-    const response = await privateApi.get<ApiResponse<OvertimeRequest[]>>(
-      '/overtime'
-    );
+  getOvertimeRequests: async (params?: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+  }): Promise<OvertimeListResponse> => {
+    const response = await privateApi.get<OvertimeListResponse>('/overtime', {
+      params,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get single overtime request detail (HR/ADMIN)
+   * Endpoint: GET /api/v1/overtime/:id
+   */
+  getOvertimeById: async (id: string): Promise<ApiResponse<OvertimeRequest>> => {
+    const response = await privateApi.get<ApiResponse<OvertimeRequest>>(`/overtime/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Update overtime request (HR/ADMIN)
+   * Endpoint: PATCH /api/v1/overtime/:id
+   */
+  updateOvertime: async (
+    id: string,
+    data: { date?: string; hours?: string; reason?: string; note?: string }
+  ): Promise<ApiResponse<OvertimeRequest>> => {
+    const response = await privateApi.patch<ApiResponse<OvertimeRequest>>(`/overtime/${id}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete overtime request (HR/ADMIN)
+   * Endpoint: DELETE /api/v1/overtime/:id
+   */
+  deleteOvertime: async (id: string): Promise<ApiResponse<{ id: string }>> => {
+    const response = await privateApi.delete<ApiResponse<{ id: string }>>(`/overtime/${id}`);
     return response.data;
   },
 

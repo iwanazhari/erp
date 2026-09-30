@@ -37,7 +37,7 @@ export default function SalesScheduleDetail() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-slate-500">Loading...</div>
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
@@ -45,7 +45,7 @@ export default function SalesScheduleDetail() {
   if (!schedule) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <p className="text-lg text-slate-600 mb-4">Jadwal tidak ditemukan</p>
+        <p className="text-lg text-muted-foreground mb-4">Jadwal tidak ditemukan</p>
         <Button onClick={() => navigate({ to: '/sales-schedules' })}>
           Kembali ke Daftar
         </Button>
@@ -76,11 +76,11 @@ export default function SalesScheduleDetail() {
     const badges = {
       PENDING: 'bg-yellow-100 text-yellow-800',
       ASSIGNED: 'bg-blue-100 text-blue-800',
-      IN_PROGRESS: 'bg-indigo-100 text-indigo-800',
+      IN_PROGRESS: 'bg-[var(--color-accent)]/10 text-accent',
       COMPLETED: 'bg-emerald-100 text-emerald-800',
       CANCELLED: 'bg-red-100 text-red-800',
     };
-    return badges[status as keyof typeof badges] || 'bg-slate-100 text-slate-800';
+    return badges[status as keyof typeof badges] || 'bg-muted text-foreground';
   };
 
   return (
@@ -88,8 +88,8 @@ export default function SalesScheduleDetail() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Detail Jadwal Sales</h1>
-          <p className="text-sm text-slate-600 mt-1">ID: {schedule.id}</p>
+          <h1 className="text-2xl font-bold text-foreground">Detail Jadwal Sales</h1>
+          <p className="text-sm text-muted-foreground mt-1">ID: {schedule.id}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => navigate({ to: '/sales-schedules' })}>
@@ -112,7 +112,7 @@ export default function SalesScheduleDetail() {
         <div className="space-y-6">
           {/* Status */}
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-slate-700">Status:</span>
+            <span className="text-sm font-medium text-muted-foreground">Status:</span>
             <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${getStatusBadge(schedule.status)}`}>
               {schedule.status}
             </span>
@@ -121,27 +121,27 @@ export default function SalesScheduleDetail() {
           {/* Date & Time */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <h3 className="text-sm font-medium text-slate-500">Tanggal</h3>
-              <p className="mt-1 text-base text-slate-900">{formatDate(schedule.date)}</p>
+              <h3 className="text-sm font-medium text-muted-foreground">Tanggal</h3>
+              <p className="mt-1 text-base text-foreground">{formatDate(schedule.date)}</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-slate-500">Waktu Mulai</h3>
-              <p className="mt-1 text-base text-slate-900">{formatTime(schedule.startTime)}</p>
+              <h3 className="text-sm font-medium text-muted-foreground">Waktu Mulai</h3>
+              <p className="mt-1 text-base text-foreground">{formatTime(schedule.startTime)}</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-slate-500">Waktu Selesai</h3>
-              <p className="mt-1 text-base text-slate-900">{formatTime(schedule.endTime)}</p>
+              <h3 className="text-sm font-medium text-muted-foreground">Waktu Selesai</h3>
+              <p className="mt-1 text-base text-foreground">{formatTime(schedule.endTime)}</p>
             </div>
           </div>
 
           {/* Location */}
           <div>
-            <h3 className="text-sm font-medium text-slate-500 mb-2">Lokasi</h3>
+            <h3 className="text-sm font-medium text-muted-foreground mb-2">Lokasi</h3>
             {schedule.location ? (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <p className="font-medium text-slate-900">{schedule.location.name}</p>
-                <p className="text-sm text-slate-600 mt-1">{schedule.location.address}</p>
-                <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
+              <div className="rounded-lg border border-border bg-muted p-4">
+                <p className="font-medium text-foreground">{schedule.location.name}</p>
+                <p className="text-sm text-muted-foreground mt-1">{schedule.location.address}</p>
+                <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
                   <span>Lat: {schedule.location.latitude}</span>
                   <span>Lng: {schedule.location.longitude}</span>
                   {schedule.location.radius && <span>Radius: {schedule.location.radius}m</span>}
@@ -150,27 +150,27 @@ export default function SalesScheduleDetail() {
                 href={`https://www.google.com/maps?q=${schedule.location.latitude},${schedule.location.longitude}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-block text-sm text-indigo-600 hover:text-indigo-800"
+                className="mt-2 inline-block text-sm text-accent hover:text-[var(--color-accent-secondary)]"
               >
                 Buka di Google Maps →
               </a>
             </div>
             ) : (
-              <p className="text-sm text-slate-500">Tidak ada lokasi</p>
+              <p className="text-sm text-muted-foreground">Tidak ada lokasi</p>
             )}
           </div>
 
           {/* Participants */}
           <div>
-            <h3 className="text-sm font-medium text-slate-500 mb-2">
+            <h3 className="text-sm font-medium text-muted-foreground mb-2">
               Sales Terlibat ({schedule.participants?.length || 0})
             </h3>
             <div className="space-y-2">
               {schedule.participants?.map((participant, idx) => (
-                <div key={idx} className="rounded-lg border border-slate-200 p-3">
-                  <p className="font-medium text-slate-900">{participant.user?.name}</p>
-                  <p className="text-sm text-slate-600">{participant.user?.email}</p>
-                  <p className="text-xs text-slate-500 mt-1">Role: {participant.user?.role || participant.role}</p>
+                <div key={idx} className="rounded-lg border border-border p-3">
+                  <p className="font-medium text-foreground">{participant.user?.name}</p>
+                  <p className="text-sm text-muted-foreground">{participant.user?.email}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Role: {participant.user?.role || participant.role}</p>
                 </div>
               ))}
             </div>
@@ -181,14 +181,14 @@ export default function SalesScheduleDetail() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {schedule.description && (
                 <div>
-                  <h3 className="text-sm font-medium text-slate-500 mb-2">Deskripsi</h3>
-                  <p className="text-sm text-slate-900 whitespace-pre-wrap">{schedule.description}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Deskripsi</h3>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{schedule.description}</p>
                 </div>
               )}
               {schedule.notes && (
                 <div>
-                  <h3 className="text-sm font-medium text-slate-500 mb-2">Catatan</h3>
-                  <p className="text-sm text-slate-900 whitespace-pre-wrap">{schedule.notes}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Catatan</h3>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{schedule.notes}</p>
                 </div>
               )}
             </div>
@@ -217,7 +217,7 @@ export default function SalesScheduleDetail() {
           )}
 
           {/* Timestamps */}
-          <div className="border-t pt-4 text-xs text-slate-500">
+          <div className="border-t pt-4 text-xs text-muted-foreground">
             <p>Dibuat: {new Date(schedule.createdAt).toLocaleString('id-ID')}</p>
             <p className="mt-1">Diperbarui: {new Date(schedule.updatedAt).toLocaleString('id-ID')}</p>
           </div>
@@ -230,26 +230,26 @@ export default function SalesScheduleDetail() {
           <h3 className="mb-4 text-lg font-semibold">Catatan Kehadiran</h3>
           <div className="space-y-3">
             {schedule.attendances.map((attendance) => (
-              <div key={attendance.id} className="rounded-lg border border-slate-200 p-4">
+              <div key={attendance.id} className="rounded-lg border border-border p-4">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <p className="text-xs text-slate-500">Tanggal</p>
+                    <p className="text-xs text-muted-foreground">Tanggal</p>
                     <p className="text-sm font-medium">{formatDate(attendance.date)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Clock In</p>
+                    <p className="text-xs text-muted-foreground">Clock In</p>
                     <p className="text-sm font-medium">
                       {attendance.clockIn ? formatTime(attendance.clockIn) : '-'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Clock Out</p>
+                    <p className="text-xs text-muted-foreground">Clock Out</p>
                     <p className="text-sm font-medium">
                       {attendance.clockOut ? formatTime(attendance.clockOut) : '-'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Status</p>
+                    <p className="text-xs text-muted-foreground">Status</p>
                     <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800">
                       {attendance.status}
                     </span>
@@ -257,7 +257,7 @@ export default function SalesScheduleDetail() {
                 </div>
                 {(attendance.latitudeIn || attendance.longitudeIn) && (
                   <div className="mt-3 border-t pt-3">
-                    <p className="text-xs text-slate-500 mb-1">Koordinat Clock In</p>
+                    <p className="text-xs text-muted-foreground mb-1">Koordinat Clock In</p>
                     <p className="text-sm">
                       Lat: {attendance.latitudeIn}, Lng: {attendance.longitudeIn}
                     </p>
@@ -266,7 +266,7 @@ export default function SalesScheduleDetail() {
                         href={attendance.selfieUrlIn}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-1 inline-block text-sm text-indigo-600 hover:text-indigo-800"
+                        className="mt-1 inline-block text-sm text-accent hover:text-[var(--color-accent-secondary)]"
                       >
                         Lihat Foto Selfie In →
                       </a>
@@ -282,17 +282,17 @@ export default function SalesScheduleDetail() {
       {/* Cancel Modal */}
       {cancelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl">
             <h3 className="mb-4 text-lg font-semibold">Batalkan Jadwal</h3>
             <div className="mb-4">
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label className="mb-1 block text-sm font-medium text-muted-foreground">
                 Alasan pembatalan <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
                 rows={3}
-                className="app-input w-full"
+                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
                 placeholder="Jelaskan alasan pembatalan..."
                 required
               />

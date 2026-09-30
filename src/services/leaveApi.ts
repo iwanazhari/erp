@@ -114,11 +114,36 @@ export const leaveApi = {
     return body.data;
   },
 
+  delete: async (id: string): Promise<{ id: string }> => {
+    const response = await privateApi.delete<ApiResponse<{ id: string }>>(`/leave/${id}`);
+    const body = response.data;
+    if (!body.success) {
+      throw new Error(body.message || 'Gagal menghapus izin');
+    }
+    return body.data;
+  },
+
   reject: async (id: string): Promise<Leave> => {
     const response = await privateApi.patch<ApiResponse<Leave>>(`/leave/${id}/reject`, {});
     const body = response.data;
     if (!body.success) {
       throw new Error(body.message || 'Gagal menolak izin');
+    }
+    return body.data;
+  },
+
+  update: async (id: string, data: {
+    date?: string;
+    status?: string;
+    leaveReason?: string;
+    leaveFileUrl?: string;
+    leaveStatus?: string;
+    editReason: string;
+  }): Promise<Leave> => {
+    const response = await privateApi.patch<ApiResponse<Leave>>(`/leave/${id}`, data);
+    const body = response.data;
+    if (!body.success) {
+      throw new Error(body.message || 'Gagal mengupdate izin');
     }
     return body.data;
   },

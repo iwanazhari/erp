@@ -305,10 +305,10 @@ export default function SalesSchedule() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-slate-600">Kelola jadwal kunjungan sales</p>
+            <p className="text-muted-foreground">Kelola jadwal kunjungan sales</p>
             <div className="flex items-center gap-2 mt-1">
               <span className={`inline-block w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-muted-foreground">
                 {connected ? 'Real-time updates connected' : 'Connecting...'}
               </span>
             </div>
@@ -319,14 +319,14 @@ export default function SalesSchedule() {
         </div>
 
         {/* Filters */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
+              <label className="mb-1 block text-sm font-medium text-muted-foreground">Status</label>
               <select
                 value={filters.status}
                 onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
-                className="app-input w-full"
+                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%2364748B%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
                 <option value="">Semua</option>
                 <option value="PENDING">Pending</option>
@@ -337,31 +337,31 @@ export default function SalesSchedule() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Tanggal Dari</label>
+              <label className="mb-1 block text-sm font-medium text-muted-foreground">Tanggal Dari</label>
               <input
                 type="date"
                 value={filters.dateFrom}
                 onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value, page: 1 })}
-                className="app-input w-full"
+                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Tanggal Sampai</label>
+              <label className="mb-1 block text-sm font-medium text-muted-foreground">Tanggal Sampai</label>
               <input
                 type="date"
                 value={filters.dateTo}
                 onChange={(e) => setFilters({ ...filters, dateTo: e.target.value, page: 1 })}
-                className="app-input w-full"
+                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
               />
             </div>
             <div className="lg:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-slate-700">Cari</label>
+              <label className="mb-1 block text-sm font-medium text-muted-foreground">Cari</label>
               <input
                 type="text"
                 value={filters.search}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
                 placeholder="Deskripsi, catatan, atau nama lokasi..."
-                className="app-input w-full"
+                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
               />
             </div>
           </div>
@@ -389,18 +389,18 @@ export default function SalesSchedule() {
 
         {/* Cancel Modal */}
         {cancelModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-              <h3 className="mb-4 text-lg font-semibold">Batalkan Jadwal</h3>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl border border-border">
+              <h3 className="mb-4 text-lg font-semibold text-foreground">Batalkan Jadwal</h3>
               <div className="mb-4">
-                <label className="mb-1 block text-sm font-medium text-slate-700">
+                <label className="mb-1 block text-sm font-medium text-muted-foreground">
                   Alasan pembatalan <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   rows={3}
-                  className="app-input w-full"
+                  className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
                   placeholder="Jelaskan alasan pembatalan..."
                   required
                 />
@@ -423,58 +423,58 @@ export default function SalesSchedule() {
         )}
 
         {/* Table */}
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-            <h3 className="text-sm font-semibold text-slate-700">Daftar Jadwal Sales</h3>
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          <div className="px-4 py-3 bg-muted border-b border-border flex justify-between items-center">
+            <h3 className="text-sm font-semibold text-foreground">Daftar Jadwal Sales</h3>
             {pagination && (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Halaman {pagination.page || filters.page} dari {pagination.totalPages || 1} - Total {pagination.total || 0} jadwal
               </p>
             )}
           </div>
           <table className="w-full">
-            <thead className="bg-slate-50 border-b">
+            <thead className="bg-muted border-b border-border">
               <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Sales</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Lokasi</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Tanggal & Waktu</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Status</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-slate-700">Aksi</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Sales</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Lokasi</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Tanggal & Waktu</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Status</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-border/50">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                     Loading...
                   </td>
                 </tr>
               ) : schedules.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                     Belum ada jadwal
                   </td>
                 </tr>
               ) : (
                 schedules.map((schedule: any) => (
-                  <tr key={schedule.id} className="hover:bg-slate-50">
+                  <tr key={schedule.id} className="hover:bg-muted transition-colors">
                     <td className="px-4 py-3 text-sm">
-                      <div className="font-medium">{getScheduleAssigneeDisplay(schedule).name}</div>
+                      <div className="font-medium text-foreground">{getScheduleAssigneeDisplay(schedule).name}</div>
                       {schedule.participants?.length > 1 && (
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-muted-foreground">
                           +{schedule.participants.length - 1} sales lainnya
                         </div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <div className="font-medium">{schedule.location?.name || '---'}</div>
-                      <div className="text-xs text-slate-500 truncate max-w-[200px]">
+                      <div className="font-medium text-foreground">{schedule.location?.name || '---'}</div>
+                      <div className="text-xs text-muted-foreground truncate max-w-[200px]">
                         {schedule.location?.address || ''}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <div>{new Date(schedule.date).toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: 'Asia/Jakarta' })}</div>
-                      <div className="text-slate-500 text-xs">
+                      <div className="text-foreground">{new Date(schedule.date).toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: 'Asia/Jakarta' })}</div>
+                      <div className="text-muted-foreground text-xs">
                         {new Date(schedule.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} - {new Date(schedule.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}
                       </div>
                     </td>
@@ -491,8 +491,7 @@ export default function SalesSchedule() {
                           <button
                             type="button"
                             onClick={() => handleViewDetail(schedule)}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-800"
-                            title="Lihat detail kehadiran"
+                            className="text-sm font-medium text-accent hover:text-[var(--color-accent-secondary)]"
                           >
                             Lihat Detail
                           </button>
@@ -501,8 +500,7 @@ export default function SalesSchedule() {
                           <button
                             type="button"
                             onClick={() => handleEdit(schedule)}
-                            className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
-                            title="Edit jadwal"
+                            className="text-sm font-medium text-accent hover:text-[var(--color-accent-secondary)]"
                           >
                             Edit
                           </button>
@@ -515,7 +513,6 @@ export default function SalesSchedule() {
                               setCancelModalOpen(true);
                             }}
                             className="text-sm font-medium text-amber-600 hover:text-amber-800"
-                            title="Batal jadwal"
                           >
                             Batal
                           </button>
@@ -524,8 +521,7 @@ export default function SalesSchedule() {
                           <button
                             type="button"
                             onClick={() => handleDelete(schedule.id)}
-                            className="text-sm font-medium text-red-600 hover:text-red-800"
-                            title="Hapus jadwal"
+                            className="text-sm font-medium text-red-500 hover:text-red-700"
                           >
                             Hapus
                           </button>
@@ -540,13 +536,13 @@ export default function SalesSchedule() {
 
           {/* Pagination */}
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
+            <div className="flex items-center justify-between border-t border-border px-4 py-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600">Tampilkan:</span>
+                <span className="text-sm text-muted-foreground">Tampilkan:</span>
                 <select
                   value={filters.pageSize}
                   onChange={(e) => setFilters({ ...filters, pageSize: Number(e.target.value), page: 1 })}
-                  className="app-input"
+                  className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground transition-all duration-200 focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%2364748B%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
                 >
                   <option value={10}>10</option>
                   <option value={20}>20</option>
@@ -563,7 +559,7 @@ export default function SalesSchedule() {
                 >
                   Prev
                 </Button>
-                <span className="text-sm text-slate-600">
+                <span className="text-sm text-muted-foreground">
                   {filters.page} / {pagination.totalPages}
                 </span>
                 <Button

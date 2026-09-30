@@ -39,15 +39,16 @@ export default function DataTable<T extends object>({
   });
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <div className="rounded-xl border border-border bg-card shadow-sm">
+      <div className="overflow-x-auto">
       <table className="min-w-full text-sm text-left">
-        <thead className="bg-slate-50 border-b border-slate-200">
+        <thead>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="px-4 py-3 font-medium text-slate-600"
+                  className="px-4 py-3 text-xs font-semibold text-muted-foreground bg-muted/50 border-b border-border"
                 >
                   {flexRender(
                     header.column.columnDef.header,
@@ -58,29 +59,34 @@ export default function DataTable<T extends object>({
             </tr>
           ))}
         </thead>
-
-        <tbody>
+        <tbody className="divide-y divide-border/60">
           {table.getRowModel().rows.map((row) => (
             <tr
               key={row.id}
-              className="border-b border-slate-100 hover:bg-slate-50 transition-all duration-200 cursor-pointer"
               onClick={() => onRowClick?.(row.original)}
+              className={[
+                "transition-colors duration-150",
+                onRowClick ? "cursor-pointer" : "",
+                "hover:bg-muted/30",
+              ].join(' ')}
             >
               {row.getVisibleCells().map((cell) => (
-                <td
-                  key={cell.id}
-                  className="px-4 py-3 text-slate-700"
-                >
-                  {flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext()
-                  )}
+                <td key={cell.id} className="px-4 py-3 text-foreground text-sm">
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
             </tr>
           ))}
         </tbody>
       </table>
+      {table.getRowModel().rows.length === 0 && (
+        <div className="text-center py-10">
+          <p className="text-sm font-medium text-muted-foreground">
+            No data found
+          </p>
+        </div>
+      )}
+      </div>
     </div>
   );
 }

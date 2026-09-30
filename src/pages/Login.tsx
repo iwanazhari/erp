@@ -1,56 +1,50 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate, Link } from '@tanstack/react-router';
 import { useAuth } from '@/shared/AuthContext';
+import { LogIn, Loader2, Shield, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { fadeUp, scaleIn } from '@/lib/animations';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
 
-  // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated) {
       navigate({ to: '/' });
     }
   }, [isAuthenticated, navigate]);
 
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.email) {
-      newErrors.email = 'Email wajib diisi';
+      newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Format email tidak valid';
+      newErrors.email = 'Invalid email format';
     }
-
     if (!formData.password) {
-      newErrors.password = 'Password wajib diisi';
+      newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password minimal 6 karakter';
+      newErrors.password = 'Minimum 6 characters';
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validate()) return;
-
     setIsSubmitting(true);
-
     try {
       await login(formData.email, formData.password);
       navigate({ to: '/' });
     } catch (error: any) {
-      setErrors({ submit: error.message });
+      setErrors({ submit: error.message || 'Authentication failed' });
     } finally {
       setIsSubmitting(false);
     }
@@ -58,130 +52,163 @@ export default function LoginPage() {
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: '' }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
   return (
     <div className="w-full max-w-md">
-      {/* Logo/Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-slate-800">Worksy</h1>
-        <p className="text-slate-600 mt-2">Employee Management System</p>
-      </div>
+      <motion.div variants={fadeUp} initial="initial" animate="animate" className="text-center mb-8">
+        <motion.div variants={scaleIn} className="inline-flex items-center justify-center h-16 w-16 rounded-2xl gradient-bg shadow-[var(--shadow-accent-lg)] mb-5">
+          <Shield className="h-8 w-8 text-white" />
+        </motion.div>
+        <h1 className="text-[2.5rem] font-display text-foreground leading-tight">
+          Waterpro
+        </h1>
+        <p className="text-sm text-muted-foreground mt-2">
+          Employee Management System
+        </p>
+      </motion.div>
 
-      {/* Login Card */}
-      <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold text-slate-800">Login</h2>
-            <p className="text-slate-600 mt-1">Masuk ke akun Anda</p>
+      <motion.div
+        variants={fadeUp}
+        initial="initial"
+        animate="animate"
+        transition={{ delay: 0.1 }}
+        className="rounded-2xl bg-card border border-border shadow-sm p-8"
+      >
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-foreground">
+            Welcome back
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">Enter your credentials to access your account</p>
+        </div>
+
+        {errors.submit && (
+          <div className="mb-6 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+            <p className="text-sm text-red-700">{errors.submit}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">
+              Email Address
+            </label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleChange('email', e.target.value)}
+              className={[
+                'w-full rounded-xl border bg-background px-4 py-3 text-sm text-foreground',
+                'placeholder:text-muted-foreground/50',
+                'transition-all duration-200',
+                'focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15',
+                errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500/15' : 'border-border',
+              ].filter(Boolean).join(' ')}
+              placeholder="name@example.com"
+            />
+            {errors.email && (
+              <p className="mt-1 text-xs text-red-500 font-medium">{errors.email}</p>
+            )}
           </div>
 
-          {/* Error Message */}
-          {errors.submit && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{errors.submit}</p>
-            </div>
-          )}
-
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Email
-              </label>
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">
+              Password
+            </label>
+            <div className="relative">
               <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                  errors.email ? 'border-red-500' : 'border-slate-300'
-                }`}
-                placeholder="nama@contoh.com"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={(e) => handleChange('password', e.target.value)}
-                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                  errors.password ? 'border-red-500' : 'border-slate-300'
-                }`}
+                className={[
+                  'w-full rounded-xl border bg-background px-4 py-3 text-sm text-foreground pr-10',
+                  'placeholder:text-muted-foreground/50',
+                  'transition-all duration-200',
+                  'focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15',
+                  errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500/15' : 'border-border',
+                ].filter(Boolean).join(' ')}
                 placeholder="••••••••"
               />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
-              )}
-            </div>
-
-            {/* Forgot Password */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-slate-600">Ingat saya</span>
-              </label>
-              <a href="#" className="text-sm text-blue-600 hover:text-blue-700">
-                Lupa password?
-              </a>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Loading...
-                </>
-              ) : (
-                'Login'
-              )}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="my-6 border-t border-slate-200" />
-
-          {/* Register Link */}
-          <div className="text-center">
-            <p className="text-sm text-slate-600">
-              Belum punya akun?{' '}
-              <Link
-                to="/register"
-                className="text-blue-600 hover:text-blue-700 font-medium"
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                Daftar
-              </Link>
-            </p>
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="mt-1 text-xs text-red-500 font-medium">{errors.password}</p>
+            )}
           </div>
+
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-border text-[var(--color-accent)] focus:ring-[var(--color-accent)]/15"
+              />
+              <span className="text-sm text-muted-foreground">Remember me</span>
+            </label>
+            <button type="button" className="text-sm font-medium text-[var(--color-accent)] hover:underline">
+              Forgot password?
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="group w-full inline-flex items-center justify-center font-semibold text-sm
+              rounded-xl gradient-bg text-white shadow-[var(--shadow-accent)]
+              hover:-translate-y-0.5 hover:shadow-[var(--shadow-accent-lg)] hover:brightness-110
+              active:scale-[0.98]
+              transition-all duration-200 focus:outline-none
+              disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:-translate-y-0 disabled:scale-100
+              px-5 py-3 gap-2 min-h-[48px]"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              <>
+                <LogIn className="h-5 w-5" />
+                Sign in
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-muted-foreground">OR</span>
+          <div className="flex-1 h-px bg-border" />
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-6">
-          <p className="text-xs text-slate-500">
-            © 2026 Worksy. All rights reserved.
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            No account?{' '}
+            <Link to="/register" className="font-medium text-[var(--color-accent)] hover:underline">
+              Create one
+            </Link>
           </p>
         </div>
-      </div>
+      </motion.div>
+
+      <motion.div
+        variants={fadeUp}
+        initial="initial"
+        animate="animate"
+        transition={{ delay: 0.2 }}
+        className="text-center mt-8"
+      >
+        <p className="text-xs text-muted-foreground">
+          &copy; 2026 Waterpro HRIS. All rights reserved.
+        </p>
+      </motion.div>
+    </div>
   );
 }

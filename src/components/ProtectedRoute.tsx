@@ -2,24 +2,41 @@ import { useEffect } from 'react';
 import { useNavigate, useLocation } from '@tanstack/react-router';
 import { useAuth } from '@/shared/AuthContext';
 
+// ponytail: schedule-only — finance01 & pm01 cuma bisa akses /schedule, di luar itu redirect ke /schedule
+const SCHEDULE_ONLY_EMAILS = new Set<string>([
+  'finance01@waterpromandiri.com',
+  'projectmanager01@waterpromandiri.com',
+  'creator01@waterpromandiri.com',
+]);
+
 type Props = {
   children: React.ReactNode;
 };
 
 export default function ProtectedRoute({ children }: Props) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  const email = user?.email?.toLowerCase() || '';
+  const scheduleOnly = SCHEDULE_ONLY_EMAILS.has(email);
+  const onSchedule = location.pathname === '/schedule';
+
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      // Don't redirect if already on login/register page
+    if (isLoading) return;
+
+    if (!isAuthenticated) {
       if (location.pathname === '/login' || location.pathname === '/register') {
         return;
       }
       navigate({ to: '/login' });
+      return;
     }
-  }, [isAuthenticated, isLoading, navigate, location.pathname]);
+
+    if (scheduleOnly && !onSchedule) {
+      navigate({ to: '/schedule' });
+    }
+  }, [isAuthenticated, isLoading, navigate, location.pathname, scheduleOnly, onSchedule, user?.role]);
 
   // Show loading while checking auth
   if (isLoading) {

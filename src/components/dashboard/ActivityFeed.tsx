@@ -10,7 +10,6 @@ export default function ActivityFeed({ logs = [], isLoading = false }: Props) {
   const navigate = useNavigate();
 
   const handleLogClick = (log: AuditLog) => {
-    // Navigate to entity detail with open param
     if (log.entityType === "attendance") {
       navigate({
         to: "/attendance",
@@ -20,21 +19,17 @@ export default function ActivityFeed({ logs = [], isLoading = false }: Props) {
         }),
       });
     }
-    // Add more entity types as needed
-    // if (log.entityType === "schedule") { ... }
   };
+
   if (isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         {[...Array(5)].map((_, i) => (
-          <div
-            key={i}
-            className="animate-pulse flex gap-3 p-3 bg-white rounded-lg border border-slate-100"
-          >
-            <div className="h-8 w-8 bg-slate-200 rounded-full" />
+          <div key={i} className="flex gap-3 p-3 rounded-lg bg-muted/50 animate-pulse">
+            <div className="h-9 w-9 rounded-full bg-muted-foreground/20" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 bg-slate-200 rounded w-3/4" />
-              <div className="h-3 bg-slate-200 rounded w-1/2" />
+              <div className="h-4 rounded bg-muted-foreground/20 w-3/4" />
+              <div className="h-3 rounded bg-muted-foreground/20 w-1/2" />
             </div>
           </div>
         ))}
@@ -44,51 +39,59 @@ export default function ActivityFeed({ logs = [], isLoading = false }: Props) {
 
   if (!logs || logs.length === 0) {
     return (
-      <div className="text-center py-8 text-slate-500 text-sm">
-        <p className="text-4xl mb-2">📝</p>
-        <p>No recent activity</p>
-        <p className="text-xs mt-1">Activity will appear here</p>
+      <div className="text-center py-8">
+        <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-muted border border-border mb-3">
+          <span className="text-lg text-muted-foreground font-mono">--</span>
+        </div>
+        <p className="text-sm font-semibold text-foreground">No Recent Activity</p>
+        <p className="text-xs text-muted-foreground mt-1">Activity will appear here</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {logs.map((log) => (
         <div
           key={log.id}
           onClick={() => handleLogClick(log)}
-          className="flex gap-3 p-3 bg-white rounded-lg border border-slate-100 cursor-pointer hover:bg-slate-50 transition"
+          className="flex gap-3 p-3 rounded-lg cursor-pointer
+            hover:bg-muted/50
+            transition-all duration-200 group"
         >
-          {/* User Avatar */}
           <div className="flex-shrink-0">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-xs font-medium text-slate-600">
+            <div
+              className="h-9 w-9 rounded-full gradient-bg shadow-[var(--shadow-accent)]
+                flex items-center justify-center text-xs font-bold text-white"
+            >
               {log.userName.charAt(0).toUpperCase()}
             </div>
           </div>
 
-          {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-slate-800 truncate">
-                  <span className="font-medium">{log.userName}</span>{" "}
-                  <span className="text-slate-500">
+                <p className="text-sm text-foreground truncate">
+                  <span className="font-semibold">{log.userName}</span>
+                  <span className="text-muted-foreground font-normal">
+                    {" "}
                     {formatAction(log.action)}{" "}
                     {formatEntityType(log.entityType)}
                   </span>
                   {log.entityName && (
-                    <span className="font-medium text-slate-700">
+                    <span className="font-medium text-foreground">
                       {" "}
                       {log.entityName}
                     </span>
                   )}
                 </p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {summarizeChanges(log.changes)}
-                </p>
+                {log.changes && log.changes.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {summarizeChanges(log.changes)}
+                  </p>
+                )}
               </div>
-              <span className="text-xs text-slate-400 flex-shrink-0">
+              <span className="text-[11px] font-mono font-medium text-muted-foreground flex-shrink-0">
                 {formatRelativeTime(log.createdAt)}
               </span>
             </div>
@@ -99,16 +102,11 @@ export default function ActivityFeed({ logs = [], isLoading = false }: Props) {
   );
 }
 
-// Helper functions
-
 function formatAction(action: AuditLog["action"]): string {
   switch (action) {
-    case "create":
-      return "created";
-    case "update":
-      return "updated";
-    case "delete":
-      return "deleted";
+    case "create": return "created";
+    case "update": return "updated";
+    case "delete": return "deleted";
   }
 }
 
@@ -147,10 +145,10 @@ function formatRelativeTime(timestamp: string): string {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffMins < 1) return "now";
+  if (diffMins < 60) return `${diffMins}m`;
+  if (diffHours < 24) return `${diffHours}h`;
+  if (diffDays < 7) return `${diffDays}d`;
 
   return date.toLocaleDateString("en-US", {
     month: "short",

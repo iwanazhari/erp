@@ -16,8 +16,6 @@ export const scheduleKeys = {
   list: (filters: ScheduleFilters) => [...scheduleKeys.lists(), filters] as const,
   details: () => [...scheduleKeys.all, 'detail'] as const,
   detail: (id: string) => [...scheduleKeys.details(), id] as const,
-  availability: (technicianId: string, date: string) =>
-    [...scheduleKeys.all, 'availability', technicianId, date] as const,
 };
 
 export const locationKeys = {
@@ -87,7 +85,8 @@ export function useDeleteSchedule() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (scheduleId: string) => scheduleApi.delete(scheduleId),
+    mutationFn: ({ scheduleId, reason }: { scheduleId: string; reason: string }) =>
+      scheduleApi.delete(scheduleId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: scheduleKeys.all });
     },
@@ -102,15 +101,6 @@ export function useBulkCreateSchedules() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: scheduleKeys.all });
     },
-  });
-}
-
-export function useTechnicianAvailability(technicianId: string | undefined, date: string | undefined) {
-  return useQuery({
-    queryKey: scheduleKeys.availability(technicianId || '', date || ''),
-    queryFn: () => scheduleApi.checkAvailability(technicianId!, date!),
-    enabled: !!technicianId && !!date,
-    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
 
