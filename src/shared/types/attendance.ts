@@ -11,10 +11,10 @@ export interface User {
   phone?: string;
   isActive?: boolean;
   scheduleId?: string;
-  jobCompletionPhotos?: string | string[];
-  customerSignature?: string;
-  airWaterPhoto?: string;
-  workReport?: string;
+  jobCompletionPhotos?: string | string[] | null;
+  customerSignature?: string | null;
+  airWaterPhoto?: string | null;
+  workReport?: string | null;
   resignDate?: string;
 }
 
@@ -67,10 +67,10 @@ export interface AttendanceRecord {
   selfieUrlIn: string;
   selfieUrlOut: string;
   scheduleId?: string;
-  jobCompletionPhotos?: string | string[];
-  customerSignature?: string;
-  airWaterPhoto?: string;
-  workReport?: string;
+  jobCompletionPhotos?: string | string[] | null;
+  customerSignature?: string | null;
+  airWaterPhoto?: string | null;
+  workReport?: string | null;
   user: User;
   company: Company;
   office: Office;
